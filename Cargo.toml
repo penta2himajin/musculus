@@ -1,0 +1,79 @@
+[package]
+name = "musculus"
+version = "0.1.0"
+edition = "2021"
+description = "A programmable text-to-speech framework — normalization, synthesis, and audio output as composable adapters"
+license = "MIT"
+repository = "https://github.com/penta2himajin/musculus"
+documentation = "https://docs.rs/musculus"
+readme = "README.md"
+keywords = ["tts", "speech-synthesis", "voice", "pipeline"]
+categories = ["multimedia::audio", "text-processing"]
+# Verified by building the library on this toolchain, not inferred. The
+# optional features raise the floor through their own dependencies
+# (`cli` needs clap, `onnx` needs ort), and those crates report that
+# themselves.
+rust-version = "1.78"
+# Evaluation corpora, model-fetch scripts and design docs are how the
+# crate is developed, not how it is consumed. Keeping them out holds
+# the published tarball to the code a dependent actually compiles.
+exclude = [
+    "/.github/",
+    "/docs/",
+    "/scripts/",
+    "/git-hooks/",
+]
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Typed errors. Proc-macro only, and it keeps the per-adapter error
+# enums readable instead of hand-rolling Display for each one.
+thiserror = "2"
+
+# CLI (opt-in). Used solely by the binary.
+clap = { version = "4", features = ["derive", "env"], optional = true }
+
+# ONNX inference (opt-in, M1). rc.13 is stated deliberately: euhadra's
+# onnx feature is pinned to the same runtime, and a caret range on a
+# pre-release resolves upward anyway (see euhadra's Cargo.toml note).
+# Declaring it keeps both crates on one ONNX Runtime in a shared tree.
+ort = { version = "2.0.0-rc.13", optional = true }
+ndarray = { version = "0.17", optional = true }
+tokenizers = { version = "0.21", optional = true }
+
+# Speaker playback (opt-in, later milestone).
+cpal = { version = "0.15", optional = true }
+
+[features]
+# Lean by default: the pipeline runtime plus the rule-based text
+# normalization traits, with no ML runtime and no system libraries.
+default = []
+
+# Mock adapters for building test doubles against musculus's traits.
+# Off by default: they are how musculus is tested, not how it is used.
+# Put it under [dev-dependencies] rather than [dependencies].
+testing = []
+
+# Everything the `musculus` binary needs. Enable this for
+# `cargo install musculus`; a library consumer normally does not.
+cli = ["dep:clap"]
+
+onnx = ["dep:ort", "dep:ndarray", "dep:tokenizers"]
+
+playback = ["dep:cpal"]
+
+[[bin]]
+name = "musculus"
+path = "src/main.rs"
+required-features = ["cli"]
+
+[dev-dependencies]
+# musculus depends on itself with `testing` on so that integration
+# tests get the mocks without every `cargo test` needing an explicit
+# --features flag.
+musculus = { path = ".", features = ["testing"] }
+tokio = { version = "1", features = ["full", "test-util"] }
+async-trait = "0.1"

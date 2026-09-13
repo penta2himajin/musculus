@@ -1,0 +1,19 @@
+# Rust
+/target
+.cargo-home/
+
+# Vendored / fetched artifacts (model weights and evaluation data arrive
+# via scripts/, never committed — AGENTS.md, Prohibitions #1)
+/vendor
+/data
+/models
+*.onnx
+*.sbv2
+
+# Evaluation audio artifacts (hashes and metadata go in docs/benchmarks/)
+*.wav
+
+# Local environment
+.env
+.env.*
+!.env.sample

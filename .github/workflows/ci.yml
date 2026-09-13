@@ -1,0 +1,35 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Format check
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --workspace
+      # The CLI binary only builds behind the `cli` feature (clap);
+      # make sure it keeps compiling.
+      - name: Build CLI
+        run: cargo build --features cli
+      # Lean-by-default guard: the default build must not drag in the
+      # ONNX runtime or system libraries (AGENTS.md, Architectural
+      # Boundaries). Verified by building once with default features
+      # only — every job above already does — and here by checking the
+      # onnx feature still compiles.
+      - name: Build onnx feature
+        run: cargo build --features onnx
