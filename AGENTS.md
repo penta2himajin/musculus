@@ -12,6 +12,7 @@ src/main.rs       # CLI エントリ([cli] feature のみビルド)
 docs/
   spec.md             # 技術仕様(アーキテクチャ、エンジン決定、マイルストーン)
   evaluation.md       # 評価方針(L1 CI / L2 リリース / L3 正規化 F1)
+  model-licenses.md   # 上位ライブラリ・モデル重みのライセンスと声ごとの規約(同梱しない前提の記録)
   benchmarks/         # 評価ランナーが書き出す実測 JSON(生成物)
   decisions/          # ADR
 tests/            # 統合テストと評価アノテーション(tests/evaluation/)

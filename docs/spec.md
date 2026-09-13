@@ -100,8 +100,8 @@ musculus: テキスト → SpeechNormalizer → TextProcessor → TtsAdapter →
 **M1 実装前に確認する事項**:
 
 - JP-Extra モデルセットの正確な構成(`.sbv2` 形式の中身:bert / style vector estimator / decode など)
-- litagin02 系モデル(tsukuyomi / amitaro / himari など)の**声ごとの利用規約** → `docs/model-licenses.md` として euhadra と同様に整備する
-- sbv2_core リポジトリのライセンス(移植の法的根拠)
+- litagin02 系モデル(tsukuyomi / amitaro / himari など)の**声ごとの利用規約** → `docs/model-licenses.md` として euhadra と同様に整備する(→ **調査済み**: sbv2_core は MIT、litagin02/Style-Bert-VITS2 本体と JP-Extra ベース重みは AGPL-3.0、声の規約は tsukuyomi=クレジット必須・商用可、amitaro=クレジット必須・敏感用途禁止。残る未確認は model-licenses.md §4)
+- sbv2_core リポジトリのライセンス(移植の法的根拠)→ **MIT 確認済み**(crates.io 全バージョン)。依存にはせず参照として読む(ADR-0003)
 - CoreML EP を M1 で入れるか(RTF に直結。まず CPU で測り、必要なら)
 
 ## 7. 比較実装: Irodori-TTS(M4)
@@ -143,7 +143,8 @@ SBV2JE ベースラインが動いた後に、比較アダプタとして実装�
 
 ## 10. 未決事項
 
-- SBV2JE モデルのライセンス詳細と `.sbv2` 形式の内容(§6、M1 前に確定)
+- モデルライセンスの残りの未確認項目 → `docs/model-licenses.md` §4(deberta.onnx の出自、tsukuyomi 元モデルの card、VOICEPEAK 学習データのグレー、Irodori 側 codec/encoder のライセンス)。コード側のライセンスは全て確定済み(MIT/BSD 系、musculus は MIT のまま)
+- `.sbv2` 形式の内容(M1 の最初の実装タスク)
 - `SpeechSegment` のスタイル/キャプション表現(実装が示すまで凍結)
 - ストリーミング合成(M4 以降)
 - crates.io 公開時の README 英語化・デュアルライセンス(MIT OR Apache-2.0)への移行要否
