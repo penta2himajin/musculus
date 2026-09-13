@@ -1,63 +1,66 @@
-# <Project Name>
+# musculus
 
 ## Overview
 
-<!-- One to three paragraphs describing the project's purpose, target domain, and distinguishing characteristics. If detailed specs live under docs/, reference them with @docs/<file>.md. -->
+musculus は euhadra(penta2himajin/euhadra、音声入力フレームワーク)の TTS 側の対として設計される、Rust 製の構成可能なテキスト→音声フレームワーク。各段階が Rust trait(`SpeechNormalizer` / `TextProcessor` / `TtsAdapter` / `AudioEmitter`)であり、ローカルファースト(ONNX Runtime 上でネイティブ合成、重みは同梱しない)、日本語ファースト。命名は mouth → mouse → *musculus*(耳の euhadra に対する口)。設計は @docs/spec.md、評価方針は @docs/evaluation.md、意思決定は @docs/decisions/ に記録する。
 
 ## Project Structure
 
-<!-- Directory layout with the role of each. Make explicit the boundary between source code, documentation, and generated artifacts. -->
-
 ```
-src/         # ...
-docs/        # ...
-tests/       # ...
+src/              # ライブラリ本体: types.rs(ドメイン型)/ traits.rs(trait 面)/ mock.rs([testing])
+src/main.rs       # CLI エントリ([cli] feature のみビルド)
+docs/
+  spec.md             # 技術仕様(アーキテクチャ、エンジン決定、マイルストーン)
+  evaluation.md       # 評価方針(L1 CI / L2 リリース / L3 正規化 F1)
+  benchmarks/         # 評価ランナーが書き出す実測 JSON(生成物)
+  decisions/          # ADR
+tests/            # 統合テストと評価アノテーション(tests/evaluation/)
+scripts/          # モデル取得等の setup スクリプト(M1 以降)
 ```
 
 ## Development Setup
 
-<!-- Required toolchain pins, bootstrap commands, external dependencies (DB, MCP servers). -->
+- Rust: MSRV 1.78(デフォルト feature)。`onnx` feature は依存が 1.88 を要求する(ort 2.0.0-rc.13)
 
 ```bash
-# example
-cargo install ...
-
 # Pre-push hook (format / lint / clippy).
-cp git-hooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+git config core.hooksPath git-hooks
 ```
 
 ## Build & Test
 
-<!-- Canonical verification commands. Must be runnable without prior setup so agents can self-verify. -->
-
 ```bash
 cargo build --workspace
 cargo test  --workspace
+# ONNX 合成アダプタ(M1 以降)
+cargo build --features onnx
 ```
 
 ## Development Principles
 
-<!-- Project-specific additions only. Do not restate the common rules below. Examples:
-- "All features touching target-adjacent columns must be registered in LEAK_FEATURES."
-- "Public API changes require an ADR in docs/decisions/." -->
+- **測定文化の継承**: 性能・品質の主張には計測を伴わせる。ベンチマーク結果は `docs/benchmarks/` に JSON でコミットし、回帰判定は「相対(baseline 比)+ 絶対(hard floor)」の 2 軸(euhadra 流儀)
+- **LLM を要らない層が主戦力**: 数値・記号・日付の読み展開はルール + CI で測れる ground truth(tests/evaluation/annotations/)で実装する
+- **重みと辞書はユーザ所有**: musculus は挙動を持ち、モデル重み・ユーザ辞書は同梱しない(setup スクリプトで取得、辞書は消費アプリが入力する)
+- trait 面の変更は docs/decisions/ に ADR を書く。trait 面は安定対象、その周辺(builder、具体実装、評価ハーネス)は 0.x で流動的
 
 ## Architectural Boundaries
 
-<!-- Structural invariants that, if violated, break the design. Examples:
-- "core crate stays domain-agnostic."
-- "Generated code under gen/ is never hand-edited."
-- "Layer X must not depend on layer Y." -->
+- default build は ML ランタイム・システムライブラリ非依存(純 Rust)。`ort` は `onnx` feature の後ろのみ、`cpal` は `playback` feature の後ろのみ
+- ONNX ランタイムは `ort` 2.0.0-rc.13 + ndarray 0.17 に固定。別バージョンの ort/ndarray を依存に入れると二重化する(ADR-0003)
+- `docs/benchmarks/` の JSON は評価ランナーの生成物であり、手編集は「意図的 baseline 更新(根拠をコミットメッセージに書く)」のみ
+- round-trip CER の物差し ASR はバージョン込みで baseline JSON に記録する。物差し変更は baseline 更新と同じ PR で行う
 
 ## Prohibitions
 
-<!-- Numbered list of "do not" rules, written so each is verifiable. Do not duplicate the common prohibitions below. -->
-
-1. ...
-2. ...
+1. モデル重み・辞書データをリポジトリに commit しない(setup スクリプト経由のみ)
+2. default feature に `ort` / `cpal` / ML ランタイム依存を足さない
+3. `docs/benchmarks/` の実測値を根拠なしに手で書き換えない
+4. 物差し ASR のバージョンを baseline 記録と別 PR で変更しない
+5. L3 アノテーションの gold(意図した読み)を、実装を通すために書き換えない(gold の変更は別 PR で理由を明記)
 
 ## Git Conventions
 
-<!-- Differences from the common rules below. Examples: scoped Conventional Commits like `feat(phase1d):`, mandatory issue links in PR bodies. -->
+共通ルールに従う。プロジェクト固有の追加はなし。
 
 ## Session Handoff
 
