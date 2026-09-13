@@ -10,7 +10,7 @@ musculus は**重みを同梱しない**(AGENTS.md Prohibitions #1)。この文�
 
 | 項目 | ライセンス | 根拠 | 備考 |
 |---|---|---|---|
-| musculus | MIT | `LICENSE` | crates.io 公開時に MIT OR Apache-2.0 への拡張を再検討(spec §10) |
+| musculus | MIT OR Apache-2.0 | `LICENSE-MIT` / `LICENSE-APACHE` | euhadra と同じデュアル。ライブラリ消費者の企業ポリシー(Apache-2.0 の特許条項要求)に対応 |
 | `ort` / ONNX Runtime | MIT | pyke.io / GitHub | `onnx` feature。rc.13 固定(ADR-0003) |
 | sbv2_core(参照実装として読む) | **MIT** | crates.io 全バージョンの `license` フィールド、neodyland/sbv2-api | **依存にはしない**(ADR-0003)。MIT なので読んで移植・言及は問題なし。`agpl_dict` default feature は使わない(§3) |
 | jpreprocess(将来 M3) | BSD-3-Clause | crates.io `license` フィールド | OpenJTalk の純 Rust 再実装 |

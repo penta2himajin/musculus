@@ -147,4 +147,4 @@ SBV2JE ベースラインが動いた後に、比較アダプタとして実装�
 - `.sbv2` 形式の内容(M1 の最初の実装タスク)
 - `SpeechSegment` のスタイル/キャプション表現(実装が示すまで凍結)
 - ストリーミング合成(M4 以降)
-- crates.io 公開時の README 英語化・デュアルライセンス(MIT OR Apache-2.0)への移行要否
+- crates.io 公開時の README 英語化(ライセンスは決定済み: MIT OR Apache-2.0、euhadra と同型)
