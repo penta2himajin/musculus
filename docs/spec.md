@@ -138,7 +138,7 @@ SBV2JE ベースラインが動いた後に、比較アダプタとして実装�
 |---|---|---|
 | M0 | 設計文書 + workspace 足場(trait / types / mock / CI) | `cargo test --workspace` green |
 | M1 | SBV2JE アダプタ(ort 直叩き)+ setup スクリプト + CLI synth→WAV | 「こんにちは」が WAV に出る。RTF 計測例あり |
-| M2 | 評価基盤(round-trip CER、proxy MOS、baseline JSON)。**L3 読み正解率ランナー完了**(2026-09-13、`docs/benchmarks/l3-ja/baseline.json`、非 gap 14/14)。round-trip CER は残 | L3 gate CI で回る ✓ / L1 は残 |
+| M2 | 評価基盤。**完了**(2026-09-13):L3 読み gate(非 gap 14/14)+ round-trip CER(mean text 0.140 / reading 0.050、`docs/benchmarks/cer-ja/baseline.json`、euhadra L1 共作物差し)。proxy MOS は M4 前に校正 | 両 gate が回る ✓ |
 | M3 | 正規化層。**TermDictionary(ユーザ辞書層)完了**(2026-09-13、CLI `--dict`、latin-letters ギャップ閉鎖を実測)。記号展開・日付/時刻の文脈読みは gap worklist として継続 | `--dict` で musculus → ムスクルス ✓ |
 | M4 | Irodori 比較アダプタ + 自分用 CMOS | 盲検プロトコルで決定を ADR 化 |
 | M5 | 多言語(en)拡張 | ja の設計が en に歪んでいないことの検証 |

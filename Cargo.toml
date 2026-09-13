@@ -106,7 +106,19 @@ async-trait = "0.1"
 # optional dependency of the library (see the `cli` feature); examples
 # get their own dev-only copy.
 clap = { version = "4", features = ["derive", "env"] }
+# The round-trip ruler: euhadra's ParakeetAdapter with the SAME ort
+# runtime (rc.13) and ndarray (0.17) this crate pins, so the two
+# crates share one ONNX Runtime in a dev tree (ADR-0003). The ruler
+# model bundle arrives via scripts/setup_ruler_asr.sh.
+euhadra = { version = "0.3", features = ["onnx"] }
+# 44.1 kHz -> 16 kHz resampling for the ruler (Parakeet expects
+# 16 kHz); FFT-based so the aliasing noise does not bias the CER.
+rubato = "0.16"
 
 [[example]]
 name = "bench_sbv2"
+required-features = ["onnx", "wav"]
+
+[[example]]
+name = "eval_cer"
 required-features = ["onnx", "wav"]

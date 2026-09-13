@@ -1,0 +1,104 @@
+{
+  "ruler": "parakeet-tdt_ctc-0.6b-ja ONNX (euhadra L1 ja ruler, via euhadra 0.3 (crates.io))",
+  "mean_text_cer": 0.13957457983193278,
+  "mean_reading_cer": 0.050222069597069596,
+  "mean_rtf": 0.21311122252298373,
+  "items": [
+    {
+      "text": "こんにちは、musculus の世界へようこそ。",
+      "transcript": "こんにちはmusclusの世界へようこそ。",
+      "text_cer": 0.047619047619047616,
+      "reading_cer": 0.08,
+      "rtf": 0.20557448073330314,
+      "audio_seconds": 4.098321995
+    },
+    {
+      "text": "今日はいい天気ですね。",
+      "transcript": "今日はいい天気ですね。",
+      "text_cer": 0.0,
+      "reading_cer": 0.0,
+      "rtf": 0.2419357536571082,
+      "audio_seconds": 1.590566893
+    },
+    {
+      "text": "2026年2月14日に、東京で会議があります。",
+      "transcript": "2026年月 14日に東京で会議があります。",
+      "text_cer": 0.047619047619047616,
+      "reading_cer": 0.017857142857142856,
+      "rtf": 0.19832846838968995,
+      "audio_seconds": 4.423401361
+    },
+    {
+      "text": "午前10時から始まります。",
+      "transcript": "午前 10時から始まります。",
+      "text_cer": 0.0,
+      "reading_cer": 0.0,
+      "rtf": 0.22039059244823136,
+      "audio_seconds": 1.962086168
+    },
+    {
+      "text": "会議の費用は1,200円でした。",
+      "transcript": "会議の費用は 1200円でした。",
+      "text_cer": 0.0,
+      "reading_cer": 0.0,
+      "rtf": 0.206498796249198,
+      "audio_seconds": 2.380045351
+    },
+    {
+      "text": "成功率は5%上がりました。",
+      "transcript": "せいこうりはこわがりました。",
+      "text_cer": 0.6666666666666666,
+      "reading_cer": 0.19230769230769232,
+      "rtf": 0.21977533431375734,
+      "audio_seconds": 2.043356009
+    },
+    {
+      "text": "駅まで50mほどです。",
+      "transcript": "駅まで 50mほどです。",
+      "text_cer": 0.0,
+      "reading_cer": 0.0,
+      "rtf": 0.22582318206798777,
+      "audio_seconds": 2.054965986
+    },
+    {
+      "text": "Wi-Fiのパスワードを教えてください。",
+      "transcript": "wi−fiのパスワードを教えてください。",
+      "text_cer": 0.058823529411764705,
+      "reading_cer": 0.3125,
+      "rtf": 0.2151497134319486,
+      "audio_seconds": 2.449705215
+    },
+    {
+      "text": "猫が座って動かない。",
+      "transcript": "ねこがすわってうごかない。",
+      "text_cer": 0.6666666666666666,
+      "reading_cer": 0.0,
+      "rtf": 0.22823372875609965,
+      "audio_seconds": 1.787936508
+    },
+    {
+      "text": "明日の午後3時に電話してください。",
+      "transcript": "あしたの午後 3時に電話してください。",
+      "text_cer": 0.1875,
+      "reading_cer": 0.0,
+      "rtf": 0.20626214647373028,
+      "audio_seconds": 2.600634921
+    },
+    {
+      "text": "このソフトウェアはmusculusと呼ばれています。",
+      "transcript": "このソフトウェアはmusculusと呼ばれています。",
+      "text_cer": 0.0,
+      "reading_cer": 0.0,
+      "rtf": 0.17759015814435067,
+      "audio_seconds": 3.9938322
+    },
+    {
+      "text": "資料を12枚印刷してください。",
+      "transcript": "資料を 12枚印刷してください。",
+      "text_cer": 0.0,
+      "reading_cer": 0.0,
+      "rtf": 0.21177231561039958,
+      "audio_seconds": 2.554195011
+    }
+  ]
+}

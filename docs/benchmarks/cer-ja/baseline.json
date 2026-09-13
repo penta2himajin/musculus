@@ -1,0 +1,41 @@
+{
+  "name": "cer-ja-roundtrip",
+  "date": "2026-09-13",
+  "milestone": "M2",
+  "metric": "round-trip CER (docs/evaluation.md §2): musculus synthesis → ruler ASR transcription → CER. Two flavours: text-level (cer_normalized, orthography noise included) and reading-level (both sides through the same ja frontend, homophone-fair phoneme comparison)",
+  "ruler": {
+    "model": "parakeet-tdt_ctc-0.6b-ja (ONNX export, 80-mel, 16 kHz)",
+    "source": "huggingface.co/sunilmahendrakar/parakeet-tdt-0.6b-ja-onnx",
+    "license": "CC-BY-4.0 (attribution required)",
+    "adapter": "euhadra 0.3 (crates.io) ParakeetAdapter — the same model euhadra's L1 uses for ja",
+    "audio_condition": "44100 Hz decode output, FFT-resampled (rubato) to 16 kHz mono"
+  },
+  "condition": {
+    "sentences": "tests/evaluation/sentences/ja.jsonl (12 sentences)",
+    "dictionary": "none (baseline measures the bare frontend; --dict runs are separate rows)",
+    "build": "release",
+    "voice": "tsukuyomi (JP-Extra, style 0)"
+  },
+  "results": {
+    "mean_text_cer": 0.140,
+    "mean_reading_cer": 0.050,
+    "mean_rtf": 0.213,
+    "per_item_highlights": [
+      "plain sentences (今日はいい天気ですね / 午前10時 / 1,200円 / 50m / 12枚 / musculus文): text CER 0.000–0.048, reading CER 0.000",
+      "猫が座って動かない: text CER 0.667 (ASR wrote kana) but reading CER 0.000 — the orthography/intelligibility split the two metrics exist for",
+      "成功率は5%上がりました: text CER 0.667, reading CER 0.192 — the percent-symbol gap does real damage (worklist)",
+      "2026年2月14日: reading CER 0.018 — the date-compound gap (とし/つき) is acoustically visible (worklist)",
+      "Wi-Fi: reading CER 0.312 — ruler transcribed Latin 'wi-fi', whose letter-reading differs from the spoken ワイファイ; a known NJD-on-hypothesis noise source, not a synthesis defect"
+    ]
+  },
+  "tolerance_policy": {
+    "relative": "regression flag if mean reading CER exceeds 0.050 * 1.25 on the same ruler version and sentence set",
+    "absolute": "mean reading CER must stay below 0.15; mean RTF must stay below 0.5 on the reference hardware"
+  },
+  "notes": [
+    "Reading CER is the primary intelligibility number; text CER is kept for literature comparability and to catch orthography-level drift.",
+    "The percent/date rows quantify the L3 gap worklist acoustically — ΔCER after each normalization fix lands here as a new row.",
+    "The ruler is shared with euhadra's L1 (same model + adapter), so ja CER numbers are comparable across the two projects.",
+    "Manual run only (2.4 GB ruler): cargo run --release --features onnx,wav --example eval_cer -- --json docs/benchmarks/cer-ja/run.json"
+  ]
+}

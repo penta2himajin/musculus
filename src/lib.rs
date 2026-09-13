@@ -20,6 +20,7 @@
 //! measurement policy, and `docs/decisions/` for the ADRs.
 
 pub mod dictionary;
+pub mod eval;
 pub mod prelude;
 pub mod traits;
 pub mod types;

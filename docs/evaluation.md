@@ -42,7 +42,9 @@ TTS の出力は音声であり正解テキストと直接比較できないた�
     → 両側を同じ正規化へ → CER(文字単位, ja)/ WER(単語単位, en)
 ```
 
-CER = (置換 + 削除 + 挿入) / 正解文字数(Levenshtein 距離)。ja は文字単位 CER、en は単語単位 WER。euhadra `src/eval/metrics.rs` の strict/lenient 2 系統を移植し、lenient に「かな化(同音異表記の吸収)」を追加する。
+CER = (置換 + 削除 + 挿入) / 正解文字数(Levenshtein 距離)。ja は文字単位 CER、en は単語単位 WER。
+
+**実装(2026-09-13)**: `src/eval.rs` に euhadra 移植の strict CER + round-trip 用の `cer_normalized`(句読点・大小文字を正字法ノイズとして両側から除去)。さらに**読みレベル CER** — 参照文・ASR 転写の両方を同一 ja フロントエンドで読みに落として音素列比較 — を併用する。正字法(猫 vs ねこ)の差を数えない知覚性の指標で、実測では「猫が座って動かない」が text CER 0.667 / reading CER 0.000 と分離した。ランナーは `examples/eval_cer.rs`、結果は `docs/benchmarks/cer-ja/`。
 
 ### 2.2 物差し ASR
 
