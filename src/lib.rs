@@ -29,6 +29,11 @@ pub mod types;
 #[cfg(feature = "onnx")]
 pub mod sbv2;
 
+// The M4 comparison candidate (ADR-0002): Irodori-TTS RF synthesis.
+// Reference-voice loading reads WAVs, hence the wav gate.
+#[cfg(all(feature = "onnx", feature = "wav"))]
+pub mod irodori;
+
 // Mocks are how musculus is tested, not how it is used — same posture
 // as euhadra's `testing` feature. Enable it via [dev-dependencies].
 #[cfg(feature = "testing")]

@@ -12,6 +12,46 @@ fn hound_err(e: hound::Error) -> std::io::Error {
     std::io::Error::other(e)
 }
 
+/// Read a WAV file (float32 or int16 PCM) as mono.
+///
+/// Stereo input takes the first channel; the reference-voice path in
+/// `src/irodori` documents that expectation.
+pub fn read_wav(path: impl AsRef<std::path::Path>) -> std::io::Result<AudioChunk> {
+    let reader = hound::WavReader::open(path).map_err(hound_err)?;
+    let spec = reader.spec();
+    let sample_rate = spec.sample_rate;
+    let channels = spec.channels as usize;
+    let samples: Vec<f32> = match spec.sample_format {
+        hound::SampleFormat::Float => reader
+            .into_samples::<f32>()
+            .collect::<Result<Vec<f32>, _>>()
+            .map_err(hound_err)?,
+        hound::SampleFormat::Int => {
+            let bits = spec.bits_per_sample;
+            let raw: Vec<i16> = reader
+                .into_samples::<i16>()
+                .collect::<Result<Vec<i16>, _>>()
+                .map_err(hound_err)?;
+            let scale = if bits == 8 { 128.0 } else { 32768.0 };
+            raw.into_iter().map(|v| v as f32 / scale).collect()
+        }
+    };
+    let samples = if channels > 1 {
+        samples
+            .into_iter()
+            .enumerate()
+            .filter(|(i, _)| i % channels == 0)
+            .map(|(_, v)| v)
+            .collect()
+    } else {
+        samples
+    };
+    Ok(AudioChunk {
+        samples,
+        sample_rate,
+    })
+}
+
 /// Write one chunk of audio to a float WAV file.
 pub fn write_wav(path: impl AsRef<std::path::Path>, chunk: &AudioChunk) -> std::io::Result<()> {
     let spec = WavSpec {

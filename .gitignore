@@ -20,3 +20,5 @@
 
 # sbv2-api reference clone (MIT; read-only reference for ADR-0003)
 .sbv2-reference/
+.irodori-reference/
+.irodori-tts-ref/

@@ -1,0 +1,47 @@
+{
+  "name": "irodori-rtf-spike",
+  "date": "2026-09-13",
+  "milestone": "M4 Step A",
+  "engine": "IrodoriAdapter (ort 2.0.0-rc.13, CPU EP, Level3) — RF Euler loop in Rust, ported from irodori-tts-webgpu runtime/pipeline.mjs (bit-faithful reference, corr=1.0)",
+  "artifacts": {
+    "source": "huggingface.co/noguchis/irodori-tts-onnx (official WebGPU export set)",
+    "weights": "Irodori-TTS-500M-v3 (MIT, no-impersonation terms) + Semantic-DACVAE-Japanese-32dim codec (MIT) + llm-jp-3-150m tokenizer (Apache-2.0)"
+  },
+  "condition": {
+    "text": "こんにちは",
+    "audio_seconds": 1.36,
+    "steps": 40,
+    "seed": 0,
+    "reference_voice": "SBV2 tsukuyomi output (11 s, 44.1 kHz -> resampled 48 kHz, LUFS -16) — same voice as the baseline engine",
+    "build": "release",
+    "effective_dit_forwards": "~80 (20 steps x 3-branch CFG + 20 single)"
+  },
+  "hardware": {
+    "chip": "Apple M1 Max",
+    "memory": "64 GB RAM",
+    "os": "macOS (darwin)"
+  },
+  "results": {
+    "load_seconds": 3.47,
+    "rtf": 5.286,
+    "wall_seconds": 7.189,
+    "audio_seconds": 1.36
+  },
+  "comparison": {
+    "sbv2_rtf_p50": 0.199,
+    "sbv2_reference": "docs/benchmarks/sbv2/baseline.json",
+    "ratio": "~25x slower than SBV2 on CPU at 40 steps; RTF scales linearly with steps",
+    "improvement_paths": [
+      "fewer steps (20 steps -> ~2.6; quality must be re-measured)",
+      "CoreML EP (Apple GPU/ANE) — untested here, likely the biggest lever on this hardware",
+      "CFG already batch-1 outside the guidance window"
+    ]
+  },
+  "tolerance_policy": {
+    "absolute": "for the two-way-voice endgame, CPU RTF must drop below 1.0 — not met; CoreML/GPU path is the next measurement"
+  },
+  "notes": [
+    "Reference voice is the SBV2 baseline's own output, so the ear comparison (M4 protocol) runs on the same voice for both engines.",
+    "The reference runtime was verified bit-faithful vs PyTorch (corr = 1.000000)."
+  ]
+}

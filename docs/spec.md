@@ -140,7 +140,7 @@ SBV2JE ベースラインが動いた後に、比較アダプタとして実装�
 | M1 | SBV2JE アダプタ(ort 直叩き)+ setup スクリプト + CLI synth→WAV | 「こんにちは」が WAV に出る。RTF 計測例あり |
 | M2 | 評価基盤。**完了**(2026-09-13):L3 読み gate(非 gap 14/14)+ round-trip CER(mean text 0.140 / reading 0.050、`docs/benchmarks/cer-ja/baseline.json`、euhadra L1 共作物差し)。proxy MOS は M4 前に校正 | 両 gate が回る ✓ |
 | M3 | 正規化層。**完了**(2026-09-13):`JaNormalizer`(L3 ギャップ 7/8 閉鎖、CER reading 0.050→0.035)+ `TermDictionary`(辞書併用で L3 22/22)。残 1 項目(latin-letters)は辞書層の所有 | L3 22/22 with dict ✓ |
-| M4 | Irodori 比較アダプタ + 自分用 CMOS | 盲検プロトコルで決定を ADR 化 |
+| M4 | Irodori 比較。**Step A(スパイク)完了**(2026-09-13、ADR-0004):Rust ポート動作、RTF 5.29 実測。残:盲検 CMOS + CER/UTMOS 客観 + CoreML RTF → 採否 ADR | 同一声で音質比較 ✓ 次の工程へ |
 | M5 | 多言語(en)拡張 | ja の設計が en に歪んでいないことの検証 |
 
 ## 10. 未決事項

@@ -53,6 +53,10 @@ tar = { version = "0.4", optional = true }
 jpreprocess = { version = "0.12", features = ["naist-jdic"], optional = true }
 # Symbol-table cleanup patterns for the ja TTS frontend.
 regex = { version = "1", optional = true }
+# NFKC normalization for the Irodori text frontend; FFT resampling for
+# the reference/16 kHz paths (both pure Rust).
+unicode-normalization = { version = "0.1", optional = true }
+rubato = { version = "0.16", optional = true }
 
 # Speaker playback (opt-in, later milestone).
 cpal = { version = "0.15", optional = true }
@@ -83,6 +87,8 @@ onnx = [
     "dep:tar",
     "dep:jpreprocess",
     "dep:regex",
+    "dep:unicode-normalization",
+    "dep:rubato",
 ]
 
 playback = ["dep:cpal"]
@@ -113,7 +119,6 @@ clap = { version = "4", features = ["derive", "env"] }
 euhadra = { version = "0.3", features = ["onnx"] }
 # 44.1 kHz -> 16 kHz resampling for the ruler (Parakeet expects
 # 16 kHz); FFT-based so the aliasing noise does not bias the CER.
-rubato = "0.16"
 
 [[example]]
 name = "bench_sbv2"
@@ -121,4 +126,8 @@ required-features = ["onnx", "wav"]
 
 [[example]]
 name = "eval_cer"
+required-features = ["onnx", "wav"]
+
+[[example]]
+name = "irodori_demo"
 required-features = ["onnx", "wav"]

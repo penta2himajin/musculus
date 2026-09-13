@@ -56,7 +56,7 @@ musculus は**重みを同梱しない**(AGENTS.md Prohibitions #1)。この文�
 1. googlefan セット内 `deberta.onnx` の出自モデルとそのライセンス(§2.1)
 2. tsukuyomi.sbv2 の元 PyTorch モデルの model card(学習データの出自、声の規約の明示)— HF API の検索で litagin 名義の tsukuyomi モデルが見つからなかったため、sbv2-web スペースや sbv2-api のドキュメントから辿る
 3. VOICEPEAK 生成音声を学習データにすることの EULA 上の整合(§2.2 つくよみちゃん、グレー)
-4. M4 の Irodori 用: 重み MIT(モデルカード記載)だが、DACVAE codec(Aratako/Semantic-DACVAE-Japanese-32dim)と ModernBERT-ja(sbintuitions)の各ライセンス
+4. **M4 の Irodori 用 — 確認済み(2026-09-13、スパイク実装と同時)**: ONNX アーティファクトは webgpu ランタイム作者の公式パッケージ [noguchis/irodori-tts-onnx](https://huggingface.co/noguchis/irodori-tts-onnx)(license: mit-and-apache-2.0)。内訳:Irodori-TTS-500M-v3 重み **MIT**(モデルカードになりすまし禁止条項)、Semantic-DACVAE-Japanese-32dim codec **MIT**(facebook/dacvae-watermarked 由来)、llm-jp-3-150m トークナイザ **Apache-2.0**。アーティファクト同梱の LICENSES/ に各一次ライセンスが同梱されている(setup_irodori.sh が取得)。musculus は重みを同梱しない(posture 不変)。なお v4.1-Small を将来使う場合は、その重みと ModernBERT-ja(sbintuitions/modernbert-ja-310m)のライセンスを改めて確認する(現スパイクは v3 ベースの公式エクスポート)
 
 ## 5. 運用ルール
 
