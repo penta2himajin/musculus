@@ -22,6 +22,10 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Test
         run: cargo test --workspace
+      # The L3 reading gate (tests/l3_ja.rs) is pure text and runs
+      # wherever the onnx feature compiles — no model bundle needed.
+      - name: Test onnx (L3 gate)
+        run: cargo test --features onnx
       # The CLI binary only builds behind the `cli` feature (clap);
       # make sure it keeps compiling.
       - name: Build CLI

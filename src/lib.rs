@@ -19,6 +19,7 @@
 //! See `docs/spec.md` for the architecture, `docs/evaluation.md` for the
 //! measurement policy, and `docs/decisions/` for the ADRs.
 
+pub mod dictionary;
 pub mod prelude;
 pub mod traits;
 pub mod types;

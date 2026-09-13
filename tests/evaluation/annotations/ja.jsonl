@@ -1,0 +1,22 @@
+{"input": "3", "reading": "さん", "category": "numeral_integer"}
+{"input": "12", "reading": "じゅうに", "category": "numeral_integer"}
+{"input": "1200", "reading": "せんにひゃく", "category": "numeral_integer"}
+{"input": "2026", "reading": "にせんにじゅうろく", "category": "numeral_integer"}
+{"input": "10000", "reading": "いちまん", "category": "numeral_integer"}
+{"input": "3.14", "reading": "さんてんいちよん", "category": "numeral_decimal"}
+{"input": "2026年", "reading": "にせんにじゅうろくねん", "category": "date"}
+{"input": "午前10時", "reading": "ごぜんじゅうじ", "category": "time"}
+{"input": "1,200円", "reading": "せんにひゃくえん", "category": "currency"}
+{"input": "AI", "reading": "えーあい", "category": "abbreviation"}
+{"input": "Wi-Fi", "reading": "わいふぁい", "category": "abbreviation"}
+{"input": "こんにちは", "reading": "こんにちわ", "category": "plain_kana"}
+{"input": "猫が座った。", "reading": "ねこがすわった", "category": "plain_kana"}
+{"input": "明日の10時に、1,200円を支払う。", "reading": "あしたのじゅうじにせんにひゃくえんをしはらう", "category": "mixed_sentence"}
+{"input": "-5", "reading": "まいなすご", "category": "numeral_negative", "gap": "minus-sign: NJD does not voice a bare leading hyphen"}
+{"input": "2月14日", "reading": "にがつじゅうよっか", "category": "date", "gap": "date-compound: 月/日 read as つき/... without date context"}
+{"input": "2026年2月14日", "reading": "にせんにじゅうろくねんにがつじゅうよっか", "category": "date", "gap": "date-compound: 年月 read as とし/つき in compounds"}
+{"input": "10:30", "reading": "じゅうじさんじゅっぷん", "category": "time", "gap": "colon-time: ':' becomes a pause; 時/分 units not inferred"}
+{"input": "¥1,200", "reading": "せんにひゃくえん", "category": "currency", "gap": "currency-symbol: '¥' stripped by the inventory pass, 円 not implied"}
+{"input": "5%", "reading": "ごぱーせんと", "category": "unit", "gap": "percent-symbol: '%' stripped by the inventory pass"}
+{"input": "50m", "reading": "ごじゅうめーとる", "category": "unit", "gap": "unit-letter: 'm' read as the letter エム"}
+{"input": "musculus", "reading": "むすくるす", "category": "coined_latin", "gap": "latin-letters: coined Latin words read letter-by-letter (listening-log 2026-09-13)"}

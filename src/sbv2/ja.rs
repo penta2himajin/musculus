@@ -21,7 +21,9 @@ use std::sync::{Arc, LazyLock};
 use jpreprocess::{kind, DefaultTokenizer, JPreprocess, SystemDictionaryConfig};
 use regex::Regex;
 
-use crate::sbv2::mora::{MORA_KATA_TO_MORA_PHONEMES, VOWELS};
+use crate::sbv2::mora::{
+    CONSONANTS, MORA_KATA_TO_MORA_PHONEMES, MORA_PHONEMES_TO_MORA_KATA, VOWELS,
+};
 use crate::sbv2::normalize::replace_punctuation;
 use crate::sbv2::symbols::PUNCTUATIONS;
 
@@ -117,7 +119,7 @@ static MORA_PATTERN: LazyLock<Vec<String>> = LazyLock::new(|| {
 });
 
 /// Convert one katakana word (or punctuation run) to phonemes.
-fn kata_to_phoneme_list(text: String) -> Result<Vec<String>, JaError> {
+pub fn kata_to_phoneme_list(text: String) -> Result<Vec<String>, JaError> {
     let chars: std::collections::HashSet<String> = text.chars().map(|c| c.to_string()).collect();
     if chars.iter().all(|c| PUNCTUATIONS.contains(&c.as_str())) {
         return Ok(text.chars().map(|c| c.to_string()).collect());
@@ -452,6 +454,54 @@ fn parse_to_string_and_pron(parts: String) -> (String, String) {
     (string, pron)
 }
 
+/// The padded phone stream (from [`JaProcess::g2p`]) → katakana
+/// reading, punctuation kept, boundary pads dropped.
+///
+/// Consumed by the L3 evaluation to compare a synthesis frontend's
+/// reading against annotated gold readings (docs/evaluation.md §3).
+pub fn phones_to_kana(phones: &[String]) -> Result<String, JaError> {
+    let mut results: Vec<String> = Vec::new();
+    let mut current_mora = String::new();
+    let end = phones.len().saturating_sub(1);
+    for phone in &phones[1..end] {
+        if phone == "_" {
+            continue;
+        }
+        if PUNCTUATIONS.contains(&phone.as_str()) {
+            results.push(phone.clone());
+            continue;
+        }
+        if CONSONANTS.contains(phone) {
+            current_mora = phone.clone();
+        } else {
+            current_mora.push_str(phone);
+            let kana = MORA_PHONEMES_TO_MORA_KATA
+                .get(&current_mora)
+                .ok_or_else(|| {
+                    JaError::ValueError(format!("phoneme pair is not a mora: {current_mora:?}"))
+                })?;
+            results.push(kana.clone());
+            current_mora.clear();
+        }
+    }
+    Ok(results.concat())
+}
+
+/// Fold hiragana to katakana, character-wise (kana fold, euhadra's
+/// MatchPolicy table: hiragana and katakana spell the same word).
+pub fn hiragana_to_katakana(text: &str) -> String {
+    text.chars()
+        .map(|c| {
+            let code = c as u32;
+            if (0x3041..=0x3096).contains(&code) {
+                char::from_u32(code + 0x60).unwrap_or(c)
+            } else {
+                c
+            }
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -526,5 +576,55 @@ mod tests {
     fn kata_to_phoneme_list_rejects_non_katakana() {
         let err = kata_to_phoneme_list("abcあ".to_string()).unwrap_err();
         assert!(matches!(err, JaError::ValueError(_)));
+    }
+}
+
+#[cfg(test)]
+mod phones_to_kana_tests {
+    use super::*;
+
+    #[test]
+    fn konnichiwa_phones_to_kana() {
+        // from the g2p test's observed stream
+        let kana = phones_to_kana(&[
+            "_".to_string(),
+            "k".into(),
+            "o".into(),
+            "N".into(),
+            "n".into(),
+            "i".into(),
+            "ch".into(),
+            "i".into(),
+            "w".into(),
+            "a".into(),
+            "_".to_string(),
+        ])
+        .unwrap();
+        // Pronunciation-based: the particle は is pronounced わ.
+        assert_eq!(kana, "コンニチワ");
+    }
+
+    #[test]
+    fn punctuation_is_kept_pads_dropped() {
+        let kana = phones_to_kana(&[
+            "_".into(),
+            "n".into(),
+            "e".into(),
+            "k".into(),
+            "o".into(),
+            ".".into(),
+            "g".into(),
+            "a".into(),
+            "_".into(),
+        ])
+        .unwrap();
+        assert_eq!(kana, "ネコ.ガ");
+    }
+
+    #[test]
+    fn hiragana_folds_to_katakana() {
+        assert_eq!(hiragana_to_katakana("むすくるす"), "ムスクルス");
+        assert_eq!(hiragana_to_katakana("あーい"), "アーイ");
+        assert_eq!(hiragana_to_katakana("ABC"), "ABC");
     }
 }
