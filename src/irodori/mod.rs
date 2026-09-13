@@ -568,8 +568,7 @@ fn rf_loop(args: RfLoop<'_>) -> Result<Vec<f32>, TtsError> {
     for i in 0..num_steps {
         let t = t_sched[i];
         let dt = t_sched[i + 1] - t;
-        let v: Vec<f32>;
-        if (CFG_MIN_T..=CFG_MAX_T).contains(&t) {
+        let v: Vec<f32> = if (CFG_MIN_T..=CFG_MAX_T).contains(&t) {
             let xc = cat3(&xt, &xt, &xt, sd);
             let x_arr = ndarray::Array3::from_shape_vec((3, seq_len, LATENT_DIM), xc)
                 .map_err(|e| inference_error("x_t reshape", e))?;
@@ -635,7 +634,7 @@ fn rf_loop(args: RfLoop<'_>) -> Result<Vec<f32>, TtsError> {
                 let vc = v3[j];
                 combined[j] = vc + CFG_TEXT * (vc - v3[sd + j]) + CFG_SPK * (vc - v3[2 * sd + j]);
             }
-            v = combined;
+            combined
         } else {
             let x_arr = ndarray::Array3::from_shape_vec((1, seq_len, LATENT_DIM), xt.clone())
                 .map_err(|e| inference_error("x_t reshape", e))?;
@@ -691,13 +690,13 @@ fn rf_loop(args: RfLoop<'_>) -> Result<Vec<f32>, TtsError> {
             let outputs = session
                 .run(feeds)
                 .map_err(|e| inference_error("dit run", e))?;
-            v = outputs[0]
+            outputs[0]
                 .try_extract_array::<f32>()
                 .map_err(|e| inference_error("v extract", e))?
                 .iter()
                 .copied()
-                .collect();
-        }
+                .collect()
+        };
         for j in 0..sd {
             xt[j] += v[j] * dt;
         }
