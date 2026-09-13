@@ -25,12 +25,26 @@
     "load_seconds": 3.47,
     "rtf": 5.286,
     "wall_seconds": 7.189,
-    "audio_seconds": 1.36
+    "audio_seconds": 1.36,
+    "additional_scaling_points": [
+      {
+        "steps": 20,
+        "text": "こんにちは",
+        "rtf": 2.795,
+        "note": "linear in steps, as expected"
+      },
+      {
+        "steps": 40,
+        "text": "long announcement (~14 s audio)",
+        "rtf": 3.057,
+        "note": "fixed costs amortize with longer audio"
+      }
+    ]
   },
   "comparison": {
     "sbv2_rtf_p50": 0.199,
     "sbv2_reference": "docs/benchmarks/sbv2/baseline.json",
-    "ratio": "~25x slower than SBV2 on CPU at 40 steps; RTF scales linearly with steps",
+    "ratio": "~25x slower than SBV2 on CPU at 40 steps for short sentences; ~15x for long ones (fixed costs amortize); RTF scales linearly with steps",
     "improvement_paths": [
       "fewer steps (20 steps -> ~2.6; quality must be re-measured)",
       "CoreML EP (Apple GPU/ANE) — untested here, likely the biggest lever on this hardware",
