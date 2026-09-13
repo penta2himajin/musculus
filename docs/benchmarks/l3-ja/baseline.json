@@ -6,14 +6,14 @@
   "frontend": "sbv2 ja frontend (num2word → normalize → g2p), no model bundle needed",
   "results": {
     "without_dictionary": {
-      "correct": 21,
-      "total": 22,
-      "non_gap": "14/14 = 1.000 (unchanged gate)",
-      "note": "JaNormalizer (dates/symbols/time/minus) closed 6 of 8 gap items"
+      "correct": 24,
+      "total": 25,
+      "non_gap": "17/17 = 1.000 (gate; month items added 2026-09-13)",
+      "note": "JaNormalizer closed 6 of 8 gap items; month euphony items (4月/7月/9月 → シガツ/シチガツ/クガツ) added from user listening feedback and now gate-enforced"
     },
     "with_fixture_dictionary": {
-      "correct": 22,
-      "total": 22,
+      "correct": 25,
+      "total": 25,
       "fixture": "tests/evaluation/fixtures/dict.json (musculus → ムスクルス)",
       "closed_gaps": [
         "latin-letters (dictionary)"
@@ -29,6 +29,7 @@
     "Comparison happens at the phoneme level (mora-split both sides), so spelling variants that sound identical (ジュウ/ジュー) are equal.",
     "Gap items are annotated with the gap field; when a fix lands, the item flips to passing and the gap field is dropped in the same PR.",
     "The worklist is the M3+ normalization roadmap: symbol expansion (%/¥/単位) and date/time context reading are next; the dictionary layer covers coined words and user vocabulary.",
-    "After JaNormalizer: 21/22 without dict, 22/22 with the fixture dict; the only open item is the dictionary-owned latin-letters case."
+    "After JaNormalizer: 21/22 without dict, 22/22 with the fixture dict; the only open item is the dictionary-owned latin-letters case.",
+    "2026-09-13 user listening feedback: 9月 must be くがつ (not きゅうがつ), 4月 → しがつ, 7月 → しちがつ aligned per user decision (なながつ available via user dictionary). Katakana rewrites survive NJD kansuji preprocessing (a written しち gets remapped to なな by NJD — measured)."
   ]
 }

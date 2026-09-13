@@ -123,7 +123,22 @@ impl SpeechNormalizer for JaNormalizer {
             } else if let Some(year) = cap.get(7) {
                 Some(format!("{}ねん", year.as_str()))
             } else if let Some(month) = cap.get(8) {
-                Some(format!("{}がつ", month.as_str()))
+                // 月 readings follow the traditional euphony: シガツ /
+                // シチガツ / クガツ (NJD's よんがつ・きゅうがつ are
+                // nonstandard, and it even remaps a written しち back to
+                // なな — katakana survives NJD untouched). なながつ stays
+                // available to users via the dictionary, which runs
+                // before this stage.
+                let reading = match month.as_str() {
+                    "4" => Some("シガツ"),
+                    "7" => Some("シチガツ"),
+                    "9" => Some("クガツ"),
+                    _ => None,
+                };
+                match reading {
+                    Some(kana) => Some(kana.to_string()),
+                    None => Some(format!("{}がつ", month.as_str())),
+                }
             } else if let Some(unit) = cap.get(13) {
                 let number = mat
                     .as_str()
@@ -179,6 +194,25 @@ mod tests {
     fn standalone_year_and_month() {
         assert_eq!(normalize("2026年").text, "2026ねん");
         assert_eq!(normalize("2月14日").text, "2がつ14日");
+    }
+
+    #[test]
+    fn month_euphony_readings() {
+        // The traditional readings, written in katakana so NJD's
+        // kansuji preprocessing does not remap them (しち -> なな).
+        assert_eq!(normalize("4月").text, "シガツ");
+        assert_eq!(normalize("7月").text, "シチガツ");
+        assert_eq!(normalize("9月").text, "クガツ");
+        // The rest keep the plain digit+がつ form.
+        assert_eq!(normalize("3月").text, "3がつ");
+        assert_eq!(normalize("10月").text, "10がつ");
+        assert_eq!(normalize("12月").text, "12がつ");
+    }
+
+    #[test]
+    fn month_euphony_in_a_full_date() {
+        assert_eq!(normalize("2026年9月13日").text, "2026ねんクガツ13日");
+        assert_eq!(normalize("2026年4月1日").text, "2026ねんシガツ1日");
     }
 
     #[test]

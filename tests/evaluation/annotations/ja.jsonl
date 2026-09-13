@@ -4,6 +4,9 @@
 {"input": "2026", "reading": "にせんにじゅうろく", "category": "numeral_integer"}
 {"input": "10000", "reading": "いちまん", "category": "numeral_integer"}
 {"input": "3.14", "reading": "さんてんいちよん", "category": "numeral_decimal"}
+{"input": "4月", "reading": "しがつ", "category": "month"}
+{"input": "7月", "reading": "しちがつ", "category": "month"}
+{"input": "9月", "reading": "くがつ", "category": "month"}
 {"input": "2026年", "reading": "にせんにじゅうろくねん", "category": "date"}
 {"input": "午前10時", "reading": "ごぜんじゅうじ", "category": "time"}
 {"input": "1,200円", "reading": "せんにひゃくえん", "category": "currency"}
