@@ -83,6 +83,8 @@ musculus: テキスト → SpeechNormalizer → TextProcessor → TtsAdapter →
 
 ## 6. 日本語ベースライン: Style-Bert-VITS2 JP-Extra(SBV2JE)
 
+**ステータス: M1 完了(2026-09-13)。** `Sbv2Adapter`(ort rc.13 直叩き)が `vendor/sbv2` の tsukuyomi JP-Extra セットで「こんにちは」を合成する。RTF 実測は `docs/benchmarks/sbv2/baseline.json`(M1 Max, release, RTF p50 0.199)。CLI: `cargo run --features cli,onnx -- synth "こんにちは"`。残る確認事項は `docs/model-licenses.md` §4。
+
 最初の `TtsAdapter` 実装。意思決定の記録は [ADR-0002](decisions/0002-ja-baseline-sbv2-je.md) にある。
 
 **選定の根拠(測定)**:

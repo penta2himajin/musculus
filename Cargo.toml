@@ -9,11 +9,11 @@ documentation = "https://docs.rs/musculus"
 readme = "README.md"
 keywords = ["tts", "speech-synthesis", "voice", "pipeline"]
 categories = ["multimedia::audio", "text-processing"]
-# Verified by building the library on this toolchain, not inferred. The
-# optional features raise the floor through their own dependencies
-# (`cli` needs clap, `onnx` needs ort), and those crates report that
-# themselves.
-rust-version = "1.78"
+# Verified by building the library on this toolchain, not inferred.
+# 1.80 covers the default build and the onnx frontend's LazyLock usage;
+# the `onnx` feature raises the floor further through its dependencies
+# (`ort` reports 1.88 itself) and those crates declare that.
+rust-version = "1.80"
 # Evaluation corpora, model-fetch scripts and design docs are how the
 # crate is developed, not how it is consumed. Keeping them out holds
 # the published tarball to the code a dependent actually compiles.
@@ -43,9 +43,22 @@ clap = { version = "4", features = ["derive", "env"], optional = true }
 ort = { version = "2.0.0-rc.13", optional = true }
 ndarray = { version = "0.17", optional = true }
 tokenizers = { version = "0.21", optional = true }
+# .sbv2 bundles are zstd-compressed tars (reference: sbv2file.rs).
+zstd = { version = "0.13", optional = true }
+tar = { version = "0.4", optional = true }
+# Japanese phonemization for the SBV2 frontend. Pinned to 0.12 — the
+# exact version sbv2_core is proven against — to avoid API drift while
+# we port the g2p algorithm. naist-jdic (BSD) is the license-clean
+# dictionary; never enable the AGPL dictionary feature here.
+jpreprocess = { version = "0.12", features = ["naist-jdic"], optional = true }
+# Symbol-table cleanup patterns for the ja TTS frontend.
+regex = { version = "1", optional = true }
 
 # Speaker playback (opt-in, later milestone).
 cpal = { version = "0.15", optional = true }
+# WAV writing for the CLI and the evaluation harness. Pure Rust; small
+# enough that the CLI can ship it unconditionally.
+hound = { version = "3", optional = true }
 
 [features]
 # Lean by default: the pipeline runtime plus the rule-based text
@@ -59,11 +72,23 @@ testing = []
 
 # Everything the `musculus` binary needs. Enable this for
 # `cargo install musculus`; a library consumer normally does not.
-cli = ["dep:clap"]
+# WAV writing is part of it because `musculus synth` writes WAVs.
+cli = ["dep:clap", "wav"]
 
-onnx = ["dep:ort", "dep:ndarray", "dep:tokenizers"]
+onnx = [
+    "dep:ort",
+    "dep:ndarray",
+    "dep:tokenizers",
+    "dep:zstd",
+    "dep:tar",
+    "dep:jpreprocess",
+    "dep:regex",
+]
 
 playback = ["dep:cpal"]
+
+# WAV file I/O. Off by default; the `cli` feature implies it.
+wav = ["dep:hound"]
 
 [[bin]]
 name = "musculus"
@@ -77,3 +102,11 @@ required-features = ["cli"]
 musculus = { path = ".", features = ["testing"] }
 tokio = { version = "1", features = ["full", "test-util"] }
 async-trait = "0.1"
+# The eval/bench examples parse their arguments with clap, which is an
+# optional dependency of the library (see the `cli` feature); examples
+# get their own dev-only copy.
+clap = { version = "4", features = ["derive", "env"] }
+
+[[example]]
+name = "bench_sbv2"
+required-features = ["onnx", "wav"]

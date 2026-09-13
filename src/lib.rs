@@ -23,7 +23,15 @@ pub mod prelude;
 pub mod traits;
 pub mod types;
 
+// ONNX synthesis adapters (SBV2 JP-Extra baseline, ADR-0002/0003).
+#[cfg(feature = "onnx")]
+pub mod sbv2;
+
 // Mocks are how musculus is tested, not how it is used — same posture
 // as euhadra's `testing` feature. Enable it via [dev-dependencies].
 #[cfg(feature = "testing")]
 pub mod mock;
+
+// WAV file I/O behind the `wav` feature (implied by `cli`).
+#[cfg(feature = "wav")]
+pub mod wav;

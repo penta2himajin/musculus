@@ -8,11 +8,13 @@ musculus は**重みを同梱しない**(AGENTS.md Prohibitions #1)。この文�
 
 ## 1. コード側(リポジトリに置くもの) — 全て musculus と矛盾しない
 
+> **M1 実装後の補足**: musculus の ja フロントエンド(g2p)は sbv2_core の LGPL 部分を複製せず独自実装した。参照した MIT データ(mora 表・シンボル表)の出自は各ファイル先頭の PROVENANCE 注記に記す。musculus のライセンス(MIT OR Apache-2.0)に変更はない。
+
 | 項目 | ライセンス | 根拠 | 備考 |
 |---|---|---|---|
 | musculus | MIT OR Apache-2.0 | `LICENSE-MIT` / `LICENSE-APACHE` | euhadra と同じデュアル。ライブラリ消費者の企業ポリシー(Apache-2.0 の特許条項要求)に対応 |
 | `ort` / ONNX Runtime | MIT | pyke.io / GitHub | `onnx` feature。rc.13 固定(ADR-0003) |
-| sbv2_core(参照実装として読む) | **MIT** | crates.io 全バージョンの `license` フィールド、neodyland/sbv2-api | **依存にはしない**(ADR-0003)。MIT なので読んで移植・言及は問題なし。`agpl_dict` default feature は使わない(§3) |
+| sbv2_core(参照実装として読む) | **MIT**、ただし `jtalk.rs` のみ LGPL-3.0 | crates.io 全バージョンの `license` フィールド、neodyland/sbv2-api の LICENSE.md | **依存にはしない**(ADR-0003)。MIT なので読んで移植・言及は問題なし。⚠️ `jtalk.rs`(g2p 実装)は litagin02 の `g2p.py` / VOICEVOX 由来で LGPL ヘッダを持つため **musculus はこの 1 ファイルを複製せず、アルゴリズムを独自に実装した**(`src/sbv2/ja.rs` の PROVENANCE 注記参照)。`mora_list.json`・シンボル表は MIT のデータとして採用 |
 | jpreprocess(将来 M3) | BSD-3-Clause | crates.io `license` フィールド | OpenJTalk の純 Rust 再実装 |
 | jpreprocess-naist-jdic | BSD(NAIST Japanese Dictionary) | jpreprocess リポジトリ | **必ず `naist-jdic` feature を選択**。lindera の AGPL 辞書系(sbv2_core の `agpl_dict`)は使わない |
 

@@ -1,0 +1,42 @@
+{
+  "name": "sbv2-ja-baseline",
+  "date": "2026-09-13",
+  "milestone": "M1",
+  "engine": "Sbv2Adapter (ort 2.0.0-rc.13, CPUExecutionProvider, Level3 optimization)",
+  "model_bundle": {
+    "source": "huggingface.co/googlefan/sbv2_onnx_models",
+    "revision": "870bcf3a7a611538d30b2f340efd9c3fff72a590",
+    "voice": "tsukuyomi (JP-Extra, 44100 Hz mono f32)",
+    "deberta": "deberta.onnx (1.2 GB), voice front-end BERT"
+  },
+  "condition": {
+    "text": "こんにちは、musculus の世界へようこそ。",
+    "audio_seconds": 4.098,
+    "build": "release",
+    "warmup_runs": 1,
+    "measured_runs": 5,
+    "style_id": 0,
+    "style_weight": 1.0,
+    "sdp_ratio": 0.0,
+    "length_scale": 1.0
+  },
+  "hardware": {
+    "chip": "Apple M1 Max",
+    "memory": "64 GB RAM",
+    "os": "macOS (darwin)"
+  },
+  "results": {
+    "rtf": { "p50": 0.199, "max": 0.208 },
+    "latency_wall_seconds": { "p50": 0.816, "max": 0.851 },
+    "model_load_seconds": 2.346
+  },
+  "tolerance_policy": {
+    "relative": "regression if RTF p50 exceeds 0.199 * 1.15 on the same hardware and model revision",
+    "absolute": "RTF p50 must stay below 1.0 (real time); latency p50 must stay below 2.0 s for this sentence"
+  },
+  "notes": [
+    "RTF = wall time / audio duration; lower is better.",
+    "First run includes onnxruntime graph optimization warmup and is excluded.",
+    "The 220 ms p95 gap between runs is within run-to-run noise on this machine."
+  ]
+}

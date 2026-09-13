@@ -23,11 +23,21 @@ are fetched by setup scripts like euhadra's.
 
 ## Status
 
-**M0 — scaffolding.** Design documents are in `docs/`:
+**M1 — ja baseline synthesis works.** The SBV2 (Style-Bert-VITS2 JP-Extra) adapter
+synthesizes Japanese text to WAV via ONNX Runtime, hand-written over `ort`:
+
+```bash
+scripts/setup_sbv2.sh                                  # fetch the tsukuyomi bundle (never committed)
+cargo run --features cli,onnx -- synth "こんにちは" --out hello.wav
+```
+
+Measured on Apple M1 Max (release): **RTF p50 0.199** for a 4.1 s utterance
+(`docs/benchmarks/sbv2/baseline.json`). Design documents are in `docs/`:
 
 - [docs/spec.md](docs/spec.md) — architecture, engine decisions (ja baseline: Style-Bert-VITS2 JP-Extra), milestones
 - [docs/evaluation.md](docs/evaluation.md) — L1/L2/L3 evaluation policy (round-trip CER, normalization F1, proxy MOS)
 - [docs/decisions/](docs/decisions/) — ADRs
+- [docs/model-licenses.md](docs/model-licenses.md) — upstream licenses and per-voice terms (weights are never bundled)
 
 ## Setup
 
