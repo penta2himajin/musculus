@@ -5,6 +5,7 @@
 
 pub mod bundle;
 pub mod ja;
+pub mod ja_norm;
 pub mod mora;
 pub mod normalize;
 pub mod symbols;
@@ -18,11 +19,12 @@ use async_trait::async_trait;
 use ort::session::Session;
 use tokenizers::Tokenizer;
 
-use crate::traits::{TtsAdapter, TtsError};
+use crate::traits::{SpeechNormalizer as _, TtsAdapter, TtsError};
 use crate::types::{AudioChunk, SpeechSegment, Synthesis};
 
 use bundle::{parse_sbv2file, StyleVectors};
 use ja::JaFrontend;
+use ja_norm::JaNormalizer;
 use synth::{load_session, synthesize_vits2, Vits2Input};
 
 /// Sample rate the released SBV2 models decode at (reference: the
@@ -50,6 +52,9 @@ struct Voice {
 /// for 0.x, the same posture as euhadra's ONNX ASR adapters.
 pub struct Sbv2Adapter {
     frontend: JaFrontend,
+    /// musculus-owned normalization (dates, symbols, time) — runs
+    /// before the frontend, whose inventory cannot read the symbols.
+    normalizer: JaNormalizer,
     tokenizer: Tokenizer,
     bert: Mutex<Session>,
     voices: BTreeMap<String, Voice>,
@@ -121,6 +126,7 @@ impl Sbv2Adapter {
         Ok(Self {
             frontend: JaFrontend::new()
                 .map_err(|e| TtsError::ModelLoad(format!("ja frontend: {e}")))?,
+            normalizer: JaNormalizer::new(),
             tokenizer,
             bert,
             voices,
@@ -225,9 +231,16 @@ fn tokenize_text(tokenizer: &Tokenizer, text: &str) -> Result<(Vec<i64>, Vec<i64
 
 impl Sbv2Adapter {
     fn parse_text(&self, text: &str) -> Result<ParsedPhones, TtsError> {
+        // musculus-owned stage first: the frontend's inventory cannot
+        // read ¥/%/℃ or date compounds; rewrite before it sees them.
+        let normalized = self
+            .normalizer
+            .normalize(text)
+            .map_err(|e| TtsError::Inference(e.to_string()))?
+            .text;
         let read = self
             .frontend
-            .num2word(text)
+            .num2word(&normalized)
             .map_err(|e| TtsError::Inference(e.to_string()))?;
         let normalized = normalize::normalize_text(&read);
         let process = self

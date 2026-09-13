@@ -49,7 +49,7 @@ musculus: テキスト → SpeechNormalizer → TextProcessor → TtsAdapter →
 
 | trait | 対応する euhadra trait | 実装(M0/M1 時点) |
 |---|---|---|
-| `SpeechNormalizer` | `InverseTextNormalizer`(の逆方向) | M0: trait + mock。M3: jpreprocess ベース + 独自辞書 |
+| `SpeechNormalizer` | `InverseTextNormalizer`(の逆方向) | M3 完了(2026-09-13): `JaNormalizer`(日付・記号・時刻・マイナスの単一スキャン正規化)+ ユーザ辞書(`TermDictionary`) |
 | `TextProcessor` | `TermDictionary` 等 | M0: trait のみ。M3: 辞書 |
 | `TtsAdapter` | `AsrAdapter` | M0: trait + mock。M1: SBV2JE(ONNX) |
 | `AudioEmitter` | `OutputEmitter` | M0: trait + mock。後続: WAV / cpal 再生 |
@@ -139,7 +139,7 @@ SBV2JE ベースラインが動いた後に、比較アダプタとして実装�
 | M0 | 設計文書 + workspace 足場(trait / types / mock / CI) | `cargo test --workspace` green |
 | M1 | SBV2JE アダプタ(ort 直叩き)+ setup スクリプト + CLI synth→WAV | 「こんにちは」が WAV に出る。RTF 計測例あり |
 | M2 | 評価基盤。**完了**(2026-09-13):L3 読み gate(非 gap 14/14)+ round-trip CER(mean text 0.140 / reading 0.050、`docs/benchmarks/cer-ja/baseline.json`、euhadra L1 共作物差し)。proxy MOS は M4 前に校正 | 両 gate が回る ✓ |
-| M3 | 正規化層。**TermDictionary(ユーザ辞書層)完了**(2026-09-13、CLI `--dict`、latin-letters ギャップ閉鎖を実測)。記号展開・日付/時刻の文脈読みは gap worklist として継続 | `--dict` で musculus → ムスクルス ✓ |
+| M3 | 正規化層。**完了**(2026-09-13):`JaNormalizer`(L3 ギャップ 7/8 閉鎖、CER reading 0.050→0.035)+ `TermDictionary`(辞書併用で L3 22/22)。残 1 項目(latin-letters)は辞書層の所有 | L3 22/22 with dict ✓ |
 | M4 | Irodori 比較アダプタ + 自分用 CMOS | 盲検プロトコルで決定を ADR 化 |
 | M5 | 多言語(en)拡張 | ja の設計が en に歪んでいないことの検証 |
 

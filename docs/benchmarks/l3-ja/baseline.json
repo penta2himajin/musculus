@@ -1,35 +1,34 @@
 {
   "name": "l3-ja-reading-accuracy",
-  "date": "2026-09-13",
+  "date": "2026-09-13 (updated: JaNormalizer landed same day)",
   "metric": "per-item phoneme-sequence equality after punctuation stripping (docs/evaluation.md §3)",
   "annotations": "tests/evaluation/annotations/ja.jsonl — 22 items: 14 non-gap + 8 gap-worklist",
   "frontend": "sbv2 ja frontend (num2word → normalize → g2p), no model bundle needed",
   "results": {
     "without_dictionary": {
-      "correct": 14,
+      "correct": 21,
       "total": 22,
-      "non_gap": "14/14 = 1.000 (the gate: proven-correct behaviours must not regress)"
+      "non_gap": "14/14 = 1.000 (unchanged gate)",
+      "note": "JaNormalizer (dates/symbols/time/minus) closed 6 of 8 gap items"
     },
     "with_fixture_dictionary": {
-      "correct": 15,
+      "correct": 22,
       "total": 22,
       "fixture": "tests/evaluation/fixtures/dict.json (musculus → ムスクルス)",
-      "closed_gaps": ["latin-letters: coined Latin words read letter-by-letter"],
-      "regressions": "none — every item that passed without the dictionary still passes"
+      "closed_gaps": [
+        "latin-letters (dictionary)"
+      ],
+      "regressions": "none"
     }
   },
   "gap_worklist": [
-    "minus-sign: '-5' → sign not voiced (numeral_negative)",
-    "date-compound: '2月14日' / '2026年2月14日' → 月/年 read as つき/とし without date context (date)",
-    "colon-time: '10:30' → ':' becomes a pause; 時/分 not inferred (time)",
-    "currency-symbol: '¥1,200' → '¥' stripped, 円 not implied (currency)",
-    "percent-symbol: '5%' → '%' stripped (unit)",
-    "unit-letter: '50m' → 'm' read as the letter エム (unit)",
-    "latin-letters: coined Latin words read letter-by-letter — CLOSED by the M3 dictionary layer"
+    "latin-letters: coined Latin words read letter-by-letter — CLOSED by the M3 dictionary layer (use --dict; built-in expansion of arbitrary coinages is out of scope by design)",
+    "CLOSED by JaNormalizer (2026-09-13): minus-sign, date-compound x2, colon-time, currency-symbol, percent-symbol, unit-letter"
   ],
   "notes": [
     "Comparison happens at the phoneme level (mora-split both sides), so spelling variants that sound identical (ジュウ/ジュー) are equal.",
     "Gap items are annotated with the gap field; when a fix lands, the item flips to passing and the gap field is dropped in the same PR.",
-    "The worklist is the M3+ normalization roadmap: symbol expansion (%/¥/単位) and date/time context reading are next; the dictionary layer covers coined words and user vocabulary."
+    "The worklist is the M3+ normalization roadmap: symbol expansion (%/¥/単位) and date/time context reading are next; the dictionary layer covers coined words and user vocabulary.",
+    "After JaNormalizer: 21/22 without dict, 22/22 with the fixture dict; the only open item is the dictionary-owned latin-letters case."
   ]
 }

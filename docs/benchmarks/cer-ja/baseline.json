@@ -1,6 +1,6 @@
 {
   "name": "cer-ja-roundtrip",
-  "date": "2026-09-13",
+  "date": "2026-09-13 (updated: JaNormalizer landed same day)",
   "milestone": "M2",
   "metric": "round-trip CER (docs/evaluation.md §2): musculus synthesis → ruler ASR transcription → CER. Two flavours: text-level (cer_normalized, orthography noise included) and reading-level (both sides through the same ja frontend, homophone-fair phoneme comparison)",
   "ruler": {
@@ -12,25 +12,34 @@
   },
   "condition": {
     "sentences": "tests/evaluation/sentences/ja.jsonl (12 sentences)",
-    "dictionary": "none (baseline measures the bare frontend; --dict runs are separate rows)",
+    "dictionary": "none; JaNormalizer (built-in) active in both rows below",
     "build": "release",
     "voice": "tsukuyomi (JP-Extra, style 0)"
   },
   "results": {
-    "mean_text_cer": 0.140,
-    "mean_reading_cer": 0.050,
-    "mean_rtf": 0.213,
-    "per_item_highlights": [
-      "plain sentences (今日はいい天気ですね / 午前10時 / 1,200円 / 50m / 12枚 / musculus文): text CER 0.000–0.048, reading CER 0.000",
-      "猫が座って動かない: text CER 0.667 (ASR wrote kana) but reading CER 0.000 — the orthography/intelligibility split the two metrics exist for",
-      "成功率は5%上がりました: text CER 0.667, reading CER 0.192 — the percent-symbol gap does real damage (worklist)",
-      "2026年2月14日: reading CER 0.018 — the date-compound gap (とし/つき) is acoustically visible (worklist)",
-      "Wi-Fi: reading CER 0.312 — ruler transcribed Latin 'wi-fi', whose letter-reading differs from the spoken ワイファイ; a known NJD-on-hypothesis noise source, not a synthesis defect"
-    ]
+    "current_janormalizer": {
+      "mean_text_cer": 0.109,
+      "mean_reading_cer": 0.035,
+      "mean_rtf": 0.274,
+      "source": "run-normalized.json",
+      "highlights": [
+        "percent sentence fully fixed: 0.667/0.192 -> 0.000/0.000 (5パーセント spoken and heard correctly)",
+        "unit sentence now spoken メートル: reading 0.000 (text CER 0.300 is ruler writing メートル in kana vs input \"m\" — orthography)",
+        "date sentence reading CER 0.018 residual is ruler-side: the ASR transcribes what it hears into 年/月 kanji, and NJD reads those とし/つき — a transcription-convention floor, not a synthesis defect",
+        "coined_latin without dict is ruler-noisy (letter-reading garbled once): the dictionary closes this row (use --dict)",
+        "Wi-Fi row: ruler transcribes Latin wi-fi whose letter-reading differs from spoken ワイファイ — known ruler-noise floor (0.312)"
+      ]
+    },
+    "pre_normalizer_reference": {
+      "mean_text_cer": 0.14,
+      "mean_reading_cer": 0.05,
+      "mean_rtf": 0.213,
+      "source": "run.json (first run, before JaNormalizer)"
+    }
   },
   "tolerance_policy": {
-    "relative": "regression flag if mean reading CER exceeds 0.050 * 1.25 on the same ruler version and sentence set",
-    "absolute": "mean reading CER must stay below 0.15; mean RTF must stay below 0.5 on the reference hardware"
+    "relative": "regression flag if mean reading CER exceeds 0.035 * 1.25 on the same ruler version and sentence set",
+    "absolute": "mean reading CER must stay below 0.15; mean RTF must stay below 0.5 on the reference hardware (RTF varies with background load; bench_sbv2 p50 0.199 is the quiet-machine number)"
   },
   "notes": [
     "Reading CER is the primary intelligibility number; text CER is kept for literature comparability and to catch orthography-level drift.",

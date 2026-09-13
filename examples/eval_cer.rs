@@ -22,7 +22,7 @@ use std::path::{Path, PathBuf};
 use clap::Parser;
 use euhadra::parakeet::ParakeetAdapter;
 use euhadra::traits::AsrAdapter as _;
-use musculus::prelude::{TextProcessor as _, TtsAdapter as _};
+use musculus::prelude::{SpeechNormalizer as _, TextProcessor as _, TtsAdapter as _};
 use musculus::sbv2::ja::JaFrontend;
 use rubato::{FftFixedIn, Resampler};
 use serde::Serialize;
@@ -96,7 +96,12 @@ fn resample_44100_to_16000(samples: &[f32]) -> Result<Vec<f32>, String> {
 /// The ja frontend's reading of `text`, as a phoneme sequence with
 /// pads and punctuation removed — the homophone-fair comparison space.
 fn reading_phonemes(frontend: &JaFrontend, text: &str) -> Option<Vec<String>> {
-    let read = frontend.num2word(text).ok()?;
+    // Mirror the production chain: JaNormalizer -> num2word -> ...
+    let normalized = musculus::sbv2::ja_norm::JaNormalizer::new()
+        .normalize(text)
+        .ok()?
+        .text;
+    let read = frontend.num2word(&normalized).ok()?;
     let normalized = musculus::sbv2::normalize::normalize_text(&read);
     let process = frontend.process_text(&normalized).ok()?;
     let (phones, _tones, _word2ph) = process.g2p().ok()?;

@@ -19,13 +19,13 @@ jobs:
       - name: Format check
         run: cargo fmt --all -- --check
       - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - name: Test
         run: cargo test --workspace
       # The L3 reading gate (tests/l3_ja.rs) is pure text and runs
       # wherever the onnx feature compiles — no model bundle needed.
-      - name: Test onnx (L3 gate)
-        run: cargo test --features onnx
+      - name: Test onnx + wav (L3 gate)
+        run: cargo test --features onnx,wav
       # The CLI binary only builds behind the `cli` feature (clap);
       # make sure it keeps compiling.
       - name: Build CLI

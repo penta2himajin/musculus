@@ -18,6 +18,7 @@
 
 use std::collections::BTreeMap;
 
+use musculus::prelude::SpeechNormalizer as _;
 use musculus::sbv2::ja::{self, JaFrontend};
 use musculus::sbv2::symbols::PUNCTUATIONS;
 use serde::Deserialize;
@@ -33,7 +34,12 @@ struct Gold {
 
 /// The frontend reading for one input, as katakana (punctuation kept).
 fn frontend_reading(frontend: &JaFrontend, input: &str) -> Result<String, String> {
-    let read = frontend.num2word(input).map_err(|e| e.to_string())?;
+    // Mirror the production chain: JaNormalizer -> num2word -> ...
+    let normalized = musculus::sbv2::ja_norm::JaNormalizer::new()
+        .normalize(input)
+        .map_err(|e| e.to_string())?
+        .text;
+    let read = frontend.num2word(&normalized).map_err(|e| e.to_string())?;
     let normalized = musculus::sbv2::normalize::normalize_text(&read);
     let process = frontend
         .process_text(&normalized)
