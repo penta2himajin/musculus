@@ -16,6 +16,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+      # clippy --all-features builds cpal, which links ALSA on Linux
+      # (the documented system requirement of the playback feature).
+      - name: Install ALSA headers
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
       - name: Format check
         run: cargo fmt --all -- --check
       - name: Clippy
