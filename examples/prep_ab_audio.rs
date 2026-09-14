@@ -19,15 +19,20 @@ struct Args {
     /// Input WAV (mono; any rate).
     #[arg(long)]
     input: PathBuf,
-    /// Output WAV path.
+    /// Output WAV path (required unless --measure).
     #[arg(long)]
-    out: PathBuf,
+    out: Option<PathBuf>,
     /// Common sample rate (default 48000).
     #[arg(long, default_value_t = 48_000)]
     rate: u32,
     /// Target integrated loudness in LUFS (default -16).
     #[arg(long, default_value_t = -16.0)]
     lufs: f64,
+    /// Measure only: print the input's integrated loudness and peak, do
+    /// not write anything. Used to verify that an A/B pair really is
+    /// loudness-matched before it is presented.
+    #[arg(long)]
+    measure: bool,
 }
 
 fn main() -> Result<(), String> {
@@ -40,20 +45,36 @@ fn main() -> Result<(), String> {
         musculus::irodori::resample_mono(&chunk.samples, chunk.sample_rate, args.rate)
             .map_err(|e| format!("resample: {e}"))?
     };
+    if args.measure {
+        // The achieved loudness is what matters: peak limiting can leave
+        // a peaky file short of the target.
+        let lufs = musculus::irodori::integrated_loudness(&samples, args.rate);
+        let peak = samples.iter().fold(0.0f32, |m, &v| m.max(v.abs()));
+        println!(
+            "lufs={} peak={:.4}",
+            lufs.map_or("nan".to_string(), |v| format!("{v:.2}")),
+            peak
+        );
+        return Ok(());
+    }
     let normalized = musculus::irodori::lufs_normalize(&samples, args.rate, args.lufs);
     let peak = normalized.iter().fold(0.0f32, |m, &v| m.max(v.abs()));
+    let out = args
+        .out
+        .as_ref()
+        .ok_or_else(|| "--out is required unless --measure".to_string())?;
     musculus::wav::write_wav(
-        &args.out,
+        out,
         &musculus::types::AudioChunk {
             samples: normalized,
             sample_rate: args.rate,
         },
     )
-    .map_err(|e| format!("write {}: {e}", args.out.display()))?;
+    .map_err(|e| format!("write {}: {e}", out.display()))?;
     eprintln!(
         "prepped {} -> {} ({} Hz, target {} LUFS, peak {:.3})",
         args.input.display(),
-        args.out.display(),
+        out.display(),
         args.rate,
         args.lufs,
         peak

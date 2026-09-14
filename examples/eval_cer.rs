@@ -44,6 +44,12 @@ struct Args {
     /// Rectified-flow Euler steps (irodori only; default 40).
     #[arg(long)]
     steps: Option<usize>,
+    /// Feed the engine a katakana reading produced by musculus's ja
+    /// frontend instead of the original text (experiment: borrow SBV2's
+    /// reading accuracy for another engine). Reading-level CER stays
+    /// comparable; text-level CER still measures the intended text.
+    #[arg(long)]
+    kana_readings: bool,
     /// Ruler ASR bundle (setup_ruler_asr.sh output).
     #[arg(long, default_value = "vendor/parakeet_ja")]
     ruler: PathBuf,
@@ -74,6 +80,7 @@ struct SentenceResult {
 #[derive(Serialize)]
 struct Report {
     engine: String,
+    kana_readings: bool,
     ruler: String,
     mean_text_cer: f64,
     mean_reading_cer: f64,
@@ -116,6 +123,22 @@ fn resample_to_16000(samples: &[f32], input_rate: u32) -> Result<Vec<f32>, Strin
     let expected = samples.len() as u64 * 16_000 / input_rate as u64;
     out.truncate(expected as usize);
     Ok(out)
+}
+
+/// Katakana reading of `text` via the musculus ja frontend
+/// (JaNormalizer -> num2word -> normalize -> g2p -> mora kana).
+fn kana_reading(frontend: &JaFrontend, text: &str) -> Result<String, String> {
+    let normalized = musculus::sbv2::ja_norm::JaNormalizer::new()
+        .normalize(text)
+        .map_err(|e| e.to_string())?
+        .text;
+    let read = frontend.num2word(&normalized).map_err(|e| e.to_string())?;
+    let normalized = musculus::sbv2::normalize::normalize_text(&read);
+    let process = frontend
+        .process_text(&normalized)
+        .map_err(|e| e.to_string())?;
+    let (phones, _tones, _word2ph) = process.g2p().map_err(|e| e.to_string())?;
+    musculus::sbv2::ja::phones_to_kana(&phones).map_err(|e| e.to_string())
 }
 
 /// The ja frontend's reading of `text`, as a phoneme sequence with
@@ -215,7 +238,15 @@ fn main() -> Result<(), String> {
             None => text.clone(),
         };
 
-        let mut segment = musculus::prelude::SpeechSegment::new(rewritten.clone());
+        // What the engine actually receives: the intended text, or a
+        // katakana reading of it (the frontend-borrowing experiment).
+        // Both CERs below still measure against the intended text.
+        let spoken = if args.kana_readings {
+            kana_reading(&frontend, &rewritten)?
+        } else {
+            rewritten.clone()
+        };
+        let mut segment = musculus::prelude::SpeechSegment::new(spoken);
         if let Some(voice) = engine.voice_hint() {
             segment = segment.with_voice(voice);
         }
@@ -288,6 +319,7 @@ fn main() -> Result<(), String> {
     };
     let report = Report {
         engine: engine.name().to_string(),
+        kana_readings: args.kana_readings,
         ruler: format!(
             "parakeet-tdt_ctc-0.6b-ja ONNX (euhadra L1 ja ruler, via euhadra {})",
             euhadra_version()

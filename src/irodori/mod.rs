@@ -185,7 +185,17 @@ fn lfilter(x: &[f64], filter: &Biquad) -> Vec<f64> {
     y
 }
 
-fn integrated_loudness(wav: &[f64], rate: u32) -> Option<f64> {
+/// ITU-R BS.1770 integrated loudness in LUFS (f64 K-weighting).
+///
+/// Public because the A/B prep tool verifies that a presented pair is
+/// actually loudness-matched (peak limiting can leave a peaky file
+/// short of the target).
+pub fn integrated_loudness(wav: &[f32], rate: u32) -> Option<f64> {
+    let wav: Vec<f64> = wav.iter().map(|&v| v as f64).collect();
+    integrated_loudness_f64(&wav, rate)
+}
+
+fn integrated_loudness_f64(wav: &[f64], rate: u32) -> Option<f64> {
     let mut d = wav.to_vec();
     for filter in K_WEIGHT_48K.iter() {
         d = lfilter(&d, filter);
@@ -226,9 +236,8 @@ fn integrated_loudness(wav: &[f64], rate: u32) -> Option<f64> {
 
 /// Normalize to `target_db` LUFS, then peak-limit to |x| ≤ 1.
 pub fn lufs_normalize(wav: &[f32], rate: u32, target_db: f64) -> Vec<f32> {
-    let wav64: Vec<f64> = wav.iter().map(|&v| v as f64).collect();
     let mut out: Vec<f32> = wav.to_vec();
-    if let Some(lufs) = integrated_loudness(&wav64, rate) {
+    if let Some(lufs) = integrated_loudness(wav, rate) {
         if lufs.is_finite() {
             let gain = 10f64.powf((target_db - lufs) / 20.0);
             for v in out.iter_mut() {
