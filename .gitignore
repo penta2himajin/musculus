@@ -22,3 +22,6 @@
 .sbv2-reference/
 .irodori-reference/
 .irodori-tts-ref/
+
+# Blind A/B engine mapping (revealed after the listener scores)
+/ab-test/key.ndjson

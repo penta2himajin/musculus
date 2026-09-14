@@ -131,3 +131,7 @@ required-features = ["onnx", "wav"]
 [[example]]
 name = "irodori_demo"
 required-features = ["onnx", "wav"]
+
+[[example]]
+name = "prep_ab_audio"
+required-features = ["onnx", "wav"]

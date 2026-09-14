@@ -247,7 +247,10 @@ pub fn lufs_normalize(wav: &[f32], rate: u32, target_db: f64) -> Vec<f32> {
 }
 
 /// Resample mono audio to `target` rate via rubato FFT chunks.
-fn resample(samples: &[f32], input_rate: u32, target: u32) -> Result<Vec<f32>, String> {
+///
+/// Shared by the reference-voice path and the A/B prep tool so both
+/// engines' audio can be compared at one rate.
+pub fn resample_mono(samples: &[f32], input_rate: u32, target: u32) -> Result<Vec<f32>, String> {
     use rubato::Resampler as _;
     if input_rate == target {
         return Ok(samples.to_vec());
@@ -754,7 +757,7 @@ impl IrodoriAdapter {
         let samples = if chunk.sample_rate == SAMPLE_RATE {
             chunk.samples
         } else {
-            resample(&chunk.samples, chunk.sample_rate, SAMPLE_RATE)
+            resample_mono(&chunk.samples, chunk.sample_rate, SAMPLE_RATE)
                 .map_err(|e| TtsError::ModelLoad(format!("resample ref: {e}")))?
         };
         let normalized = lufs_normalize(&samples, SAMPLE_RATE, REF_TARGET_LUFS);
