@@ -82,30 +82,37 @@ impl JaFrontend {
             .collect())
     }
 
-    /// Dump the NJD nodes (tokenisation + dictionary details) for a text.
+    /// Dump the NJD nodes before and after OpenJTalk's preprocess steps
+    /// (which include the accent-phrase and accent-type assignment).
     ///
-    /// Diagnostic for the accent work: it shows how a numeral was split,
-    /// what accent type and mora count each token carries, and which
-    /// accent chain rule the dictionary attached to it — the inputs the
-    /// NJD accent step consumes (docs/benchmarks/accent/ja-report.md).
-    pub fn njd_dump(&self, text: &str) -> Result<Vec<String>, JaError> {
+    /// This is the diagnostic that shows whether a chain rule actually
+    /// fired: the accent value per token is read straight off the node's
+    /// [`Pronunciation`]. See docs/accent-resources.md §Mechanism.
+    pub fn njd_dump_stages(&self, text: &str) -> Result<(Vec<String>, Vec<String>), JaError> {
         let mut njd = self
             .jpreprocess
             .text_to_njd(text)
             .map_err(|e| JaError::Jpreprocess(e.to_string()))?;
+        // The node type is not nameable through jpreprocess's re-exports,
+        // so describe a node with a macro (inference handles the type).
+        macro_rules! line {
+            ($node:expr) => {{
+                let pron = $node.get_pron();
+                format!(
+                    "{:>8} | pos={} | read={} | accent={}/{} | chain={}",
+                    $node.get_string(),
+                    $node.get_pos(),
+                    $node.get_read().unwrap_or("?"),
+                    pron.accent(),
+                    pron.mora_size(),
+                    $node.get_chain_rule()
+                )
+            }};
+        }
+        let before = njd.nodes.iter().map(|node| line!(node)).collect();
         njd.preprocess();
-        Ok(njd
-            .nodes
-            .iter()
-            .map(|node| {
-                let surface = node.get_string();
-                let pos = node.get_pos();
-                let read = node.get_read().unwrap_or("?");
-                let pron = node.get_pron();
-                let chain = node.get_chain_rule();
-                format!("{surface:>10} | pos={pos} | read={read} | pron={pron} | chain={chain}")
-            })
-            .collect())
+        let after = njd.nodes.iter().map(|node| line!(node)).collect();
+        Ok((before, after))
     }
 
     /// Parse normalized text into a [`JaProcess`] for g2p.

@@ -157,3 +157,55 @@ Docker CLI exists but **the daemon is unavailable** here, so tdmelodic's
 Docker workflow is out; **Python 3.14.6 + torch 2.13.0 are available**, so
 its Python route is feasible if it ever becomes necessary. Given (3), the
 jpreprocess route looks both cheaper and more likely to be the real fix.
+
+---
+
+## Decisive comparison: jpreprocess matches the OpenJTalk reference (2026-09-14)
+
+Installed **pyopenjtalk into a workspace-local `.venv`** (gitignored) as a
+reference oracle and compared its NJD nodes with ours. The result changes
+the plan:
+
+| input | reference (OpenJTalk) | ours (jpreprocess) |
+|---|---|---|
+| 千円 | 千 acc=**2**/2, chain C3; 円 1/2 | — (same machinery) |
+| 千二百 | 千 acc=**1**/2, 二 3/1, 百 2/2 (all C3) | **identical** |
+| 千五百 | 千 acc=**1**/2, 五 3/1, 百 2/2 (all C3) | **identical** |
+| 二千二百円 | 二 2/1, 千 acc=**1**/2, 二 3/1, 百 2/2, 円 1/2 | **identical** |
+| 1,200 | 千 acc=1 chain **\***, 二 3/1, 百 2/2 chain **\*** | **identical** (including the dropped chain rules) |
+
+**jpreprocess is faithful.** There is no port bug, and the earlier
+"pipeline defect" framing was wrong: what the listener hears differs from
+the announcer norm because **OpenJTalk's own numeral accent assignment
+differs from that norm** (note it even treats 千円 as accent 2 and
+千二百 as accent 1, i.e. it is context-sensitive, just differently).
+Our frontend is therefore a solid *baseline*, not a bug to fix.
+
+Consequences:
+1. The fix must be an **intentional deviation** on top of the reference:
+   our accent override table (done) and a rule layer derived from the
+   literature — each deviation justified by the sources and confirmed by
+   the listener.
+2. The reference oracle is now a **regression baseline**: our labels must
+   match pyopenjtalk except where we deliberately deviate, which makes
+   accidental drift detectable in CI.
+3. Why jpreprocess behaves this way is visible in
+   `jpreprocess-njd/src/open_jtalk/accent_type.rs`: numerals take a
+   dedicated `calc_digit_acc` path (it is what turned 五 into 3/1), while
+   the chain rule (C3 = "accent = mora_size") is applied to the accent
+   phrase's *top* node. The numeral tables trace back to OpenJTalk's
+   digit LUTs, which is why the reference agrees.
+
+## koniwa's schema: reading gold, not accent gold (2026-09-14)
+
+`koniwa/schema.py` defines `Span { text_level0, kana_level0, text_level2,
+kana_level3, memo }` inside `Annotation { start, end, data }` plus
+`Meta { duration, series, album, title, … }`. That is **time-aligned
+transcription at several levels (text and kana) with no accent or pitch
+field**.
+
+So koniwa is usable as (a) **reading/pronunciation gold with timings** and
+(b) a source of audio for a future F0-based accent measurement — but it
+cannot by itself provide H/L accent gold. Accent gold therefore comes from
+the listener's annotations (already the case) and, later, from F0 analysis
+or an accent-labelled lexicon.

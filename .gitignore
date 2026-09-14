@@ -34,3 +34,6 @@
 /ab-test-steps/key.ndjson
 /ab-test-sbv2-split/key.ndjson
 /ab-test-sbv2-group/key.ndjson
+
+# Reference frontend for accent comparison (local, not committed)
+/.venv/

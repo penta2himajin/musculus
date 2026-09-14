@@ -94,7 +94,15 @@ fn main() -> Result<(), String> {
             serde_json::from_str(line).map_err(|e| format!("line {}: {e}", i + 1))?;
         if args.njd {
             println!("--- NJD for {:?}", item.input);
-            for line in frontend.njd_dump(&item.input).map_err(|e| e.to_string())? {
+            let (before, after) = frontend
+                .njd_dump_stages(&item.input)
+                .map_err(|e| e.to_string())?;
+            println!("      [before preprocess]");
+            for line in before {
+                println!("      {line}");
+            }
+            println!("      [after preprocess]");
+            for line in after {
                 println!("      {line}");
             }
         }
