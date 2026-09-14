@@ -375,3 +375,21 @@ data. Six candidates now sit in `ab-test-accent/`, paired by initial mora:
 | shinshuu-4 | `HHHHHLHHHH` | セ high + ク falls |
 | shinshuu-5 | `HHHHHHHHHH` | セ high + everything high |
 | shinshuu-6 | `HHHHHHHHHL` | セ high + final ト low |
+
+### Blinded set for third-party listeners (2026-09-14)
+
+The listener is collecting evaluations from acquaintances, so a blinded copy
+was prepared: `ab-test-accent-blind/` holds the same six takes under neutral
+names **A–F in a randomly shuffled order**, with `key.ndjson` gitignored (the
+mapping is revealed only after scoring). Files and sheets were checked to
+contain no mention of tone patterns, and all six measure exactly
+**-20.00 LUFS**, so neither the names, the docs, nor the loudness can leak
+which take is which. `score-sheet.md` asks for a 1–5 naturalness rating per
+take plus a single top choice, which makes the answers comparable across
+listeners.
+
+Tallying once the sheets come back: reveal `key.ndjson`, then compute the
+mean naturalness per variant and count top choices; record the outcome in
+docs/benchmarks/listening-log.md and, if it overrides the current choice,
+update `examples/accent-overrides.json` plus the `expected_tones` entry so
+the regression gate follows.

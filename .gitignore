@@ -37,3 +37,4 @@
 
 # Reference frontend for accent comparison (local, not committed)
 /.venv/
+/ab-test-accent-blind/key.ndjson
