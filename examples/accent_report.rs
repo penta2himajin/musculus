@@ -24,6 +24,10 @@ struct Args {
     /// Accent annotation file (JSONL: input, optional expected_tones).
     #[arg(long, default_value = "tests/evaluation/annotations/ja_accent.jsonl")]
     annotations: PathBuf,
+    /// Also dump the prosody labels (accent-phrase boundaries and accent
+    /// positions) behind each item's tones.
+    #[arg(long)]
+    labels: bool,
 }
 
 #[derive(Deserialize)]
@@ -66,6 +70,21 @@ fn main() -> Result<(), String> {
         }
         let item: AccentItem =
             serde_json::from_str(line).map_err(|e| format!("line {}: {e}", i + 1))?;
+        if args.labels {
+            let normalized = musculus::sbv2::ja_norm::JaNormalizer::new()
+                .normalize(&item.input)
+                .map_err(|e| e.to_string())?
+                .text;
+            let read = frontend.num2word(&normalized).map_err(|e| e.to_string())?;
+            let normalized = musculus::sbv2::normalize::normalize_text(&read);
+            let process = frontend
+                .process_text(&normalized)
+                .map_err(|e| e.to_string())?;
+            println!("--- labels for {:?} (normalized: {normalized:?})", item.input);
+            for line in process.label_dump().map_err(|e| e.to_string())? {
+                println!("      {line}");
+            }
+        }
         let pairs = accent_view(&frontend, &item.input)?;
         let kana: String = pairs.iter().map(|(m, _)| m.as_str()).collect();
         let tones = ja::tone_string(&pairs);

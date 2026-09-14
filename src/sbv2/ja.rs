@@ -348,6 +348,43 @@ impl JaProcess {
         Ok(phones)
     }
 
+    /// Human-readable dump of the prosody labels driving the tones.
+    ///
+    /// Diagnostic for the accent work: shows where each accent phrase
+    /// starts/ends and the accent positions, i.e. *why* a tone came out
+    /// the way it did (docs/benchmarks/accent/ja-report.md).
+    pub fn label_dump(&self) -> Result<Vec<String>, JaError> {
+        let labels = self.jpreprocess.make_label(self.parsed.clone());
+        Ok(labels
+            .iter()
+            .map(|label| {
+                let phoneme = label.phoneme.c.clone().unwrap_or_else(|| "?".into());
+                let (a1, a2, a3) = label
+                    .mora
+                    .as_ref()
+                    .map(|m| {
+                        (
+                            m.relative_accent_position as i32,
+                            m.position_forward as i32,
+                            m.position_backward as i32,
+                        )
+                    })
+                    .unwrap_or((-50, -50, -50));
+                let f1 = label
+                    .accent_phrase_curr
+                    .as_ref()
+                    .map(|a| a.mora_count as i32)
+                    .unwrap_or(-50);
+                let f2 = label
+                    .accent_phrase_curr
+                    .as_ref()
+                    .map(|a| a.accent_position as i32)
+                    .unwrap_or(-50);
+                format!("{phoneme:>4} a1={a1:>3} a2={a2:>3} a3={a3:>3} f1={f1:>2} f2={f2:>2}")
+            })
+            .collect())
+    }
+
     /// Full g2p: (phones, tones, word2ph).
     ///
     /// `phones`/`tones` carry boundary pads; `word2ph` (one entry per
