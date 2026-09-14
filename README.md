@@ -23,6 +23,12 @@ are fetched by setup scripts like euhadra's.
 
 ## Status
 
+**M4 — ja engine posture decided: two engines.** SBV2JE is the realtime
+default (RTF 0.233 on Apple M1 Max); Irodori-TTS is the quality choice
+(blind A/B 5/5, mean CMOS +2.75; RTF 5.16 at 40 steps). CoreML was measured
+and is not the realtime lever for this model set. See
+[docs/decisions/0005-dual-engine-posture.md](docs/decisions/0005-dual-engine-posture.md).
+
 **M1 — ja baseline synthesis works.** The SBV2 (Style-Bert-VITS2 JP-Extra) adapter
 synthesizes Japanese text to WAV via ONNX Runtime, hand-written over `ort`:
 

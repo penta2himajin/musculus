@@ -51,7 +51,7 @@ musculus: テキスト → SpeechNormalizer → TextProcessor → TtsAdapter →
 |---|---|---|
 | `SpeechNormalizer` | `InverseTextNormalizer`(の逆方向) | M3 完了(2026-09-13): `JaNormalizer`(日付・記号・時刻・マイナスの単一スキャン正規化)+ ユーザ辞書(`TermDictionary`) |
 | `TextProcessor` | `TermDictionary` 等 | M0: trait のみ。M3: 辞書 |
-| `TtsAdapter` | `AsrAdapter` | M0: trait + mock。M1: SBV2JE(ONNX) |
+| `TtsAdapter` | `AsrAdapter` | M1: SBV2JE(ONNX、リアルタイム既定)。M4: Irodori(ONNX、品質優先)— 二本立て(ADR-0005) |
 | `AudioEmitter` | `OutputEmitter` | M0: trait + mock。後続: WAV / cpal 再生 |
 
 エラー型は `AsrError` の鏡像として `#[non_exhaustive]` で設計する(M0 コード参照)。
@@ -140,7 +140,7 @@ SBV2JE ベースラインが動いた後に、比較アダプタとして実装�
 | M1 | SBV2JE アダプタ(ort 直叩き)+ setup スクリプト + CLI synth→WAV | 「こんにちは」が WAV に出る。RTF 計測例あり |
 | M2 | 評価基盤。**完了**(2026-09-13):L3 読み gate(非 gap 14/14)+ round-trip CER(mean text 0.140 / reading 0.050、`docs/benchmarks/cer-ja/baseline.json`、euhadra L1 共作物差し)。proxy MOS は M4 前に校正 | 両 gate が回る ✓ |
 | M3 | 正規化層。**完了**(2026-09-13):`JaNormalizer`(L3 ギャップ 7/8 閉鎖、CER reading 0.050→0.035)+ `TermDictionary`(辞書併用で L3 22/22)。残 1 項目(latin-letters)は辞書層の所有 | L3 22/22 with dict ✓ |
-| M4 | Irodori 比較。**Step A(スパイク)完了**(2026-09-13、ADR-0004):Rust ポート動作、RTF 5.29 実測。残:盲検 CMOS + CER/UTMOS 客観 + CoreML RTF → 採否 ADR | 同一声で音質比較 ✓ 次の工程へ |
+| M4 | Irodori 比較。**完了**(2026-09-13):盲検 CMOS 5/5・平均 +2.75、CoreML 実測でリアルタイム不可と確定 → **二本立て採用**(ADR-0005:品質=Irodori / リアルタイム=SBV2JE)。残:CLI のエンジン選択・辞書接続・CER 一般化 | 採否決定済み ✓ |
 | M5 | 多言語(en)拡張 | ja の設計が en に歪んでいないことの検証 |
 
 ## 10. 未決事項
@@ -149,4 +149,5 @@ SBV2JE ベースラインが動いた後に、比較アダプタとして実装�
 - `.sbv2` 形式の内容(M1 の最初の実装タスク)
 - `SpeechSegment` のスタイル/キャプション表現(実装が示すまで凍結)
 - ストリーミング合成(M4 以降)
+- **文境界ハンドオフ(アイデア・未決定)**:文単位で SBV2 を即再生しつつ Irodori の生成を裏で進め、間に合った文から Irodori に引き継いで生成時間を再生の裏に隠す。実測制約の分析と緩和策は ADR-0005 に記録(40 steps は backlog が ~4.16×音声長/文で増えるため単一生成器では不成立、5 steps なら RTF 1.08 でほぼ追いつく = 低ステップ品質の検証と分岐点が一致)。実装には文分割(Segmentator)が必要
 - crates.io 公開時の README 英語化(ライセンスは決定済み: MIT OR Apache-2.0、euhadra と同型)
