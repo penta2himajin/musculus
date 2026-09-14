@@ -25,3 +25,6 @@
 
 # Blind A/B engine mapping (revealed after the listener scores)
 /ab-test/key.ndjson
+
+# macOS
+.DS_Store
