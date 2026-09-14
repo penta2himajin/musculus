@@ -4,14 +4,19 @@
 
 ## 候補(48 kHz / −20 LUFS 統一、同じ文「先週と比べると」)
 
-| ファイル | カナ | tones | 解釈 |
-|---|---|---|---|
-| [shinshuu-1.wav](shinshuu-1.wav) | センシュウトクラベルト | `LHHHHLHHHH` | **参照実装のまま**。先週と = LHHHH(平板)、比べると = ク**L** ラベルトH(ク で下がる) |
-| [shinshuu-2.wav](shinshuu-2.wav) | センシュウトクラベルト | `LHHHHHHHHH` | 比べると を**連続 H**(ク ラ ベ ル ト = HHHHH) |
-| [shinshuu-3.wav](shinshuu-3.wav) | センシュウトクラベルト | `LHHHHHHHHL` | 連続 H だが**文末トのみ L**(ク ラ ベ ル = HHH、ト = L) |
+**セ L 版(3 つ)** と **セ H 版(3 つ)** を対にしてあります。句頭の セ が低いか高いかで、後の形を聴き比べられます。
 
-- 候補 2・3 は**上書き表**(`クラベルト` → `HHHHH` / `HHHHL`)で作っています。実装済みの機構でそのまま再現できます
-- 候補 1 は素の参照実装の出力です(先週との部分はいずれも `LHHHH`)
+| ファイル | tones | セ | 比べると | 解釈 |
+|---|---|---|---|---|
+| [shinshuu-1.wav](shinshuu-1.wav) | `LHHHHLHHHH` | L | ク**L** ラベルトH | **参照実装のまま**(ク で下がる) |
+| [shinshuu-2.wav](shinshuu-2.wav) | `LHHHHHHHHH` | L | 連続 H | 比べると が平坦に続く |
+| [shinshuu-3.wav](shinshuu-3.wav) | `LHHHHHHHHL` | L | 連続 H + トL | 文末だけ下がる |
+| [shinshuu-4.wav](shinshuu-4.wav) | `HHHHHLHHHH` | **H** | ク**L** ラベルトH | セH + ク で下がる |
+| [shinshuu-5.wav](shinshuu-5.wav) | `HHHHHHHHHH` | **H** | 連続 H | セH + 全部 H |
+| [shinshuu-6.wav](shinshuu-6.wav) | `HHHHHHHHHL` | **H** | 連続 H + トL | セH + 文末だけ下がる |
+
+- すべて**実装済みの上書き表**で作っています(候補 1 は素の参照実装、2・3 は `クラベルト`、4〜6 は `センシュウトクラベルト` 全体を指定)
+- **セ H 版について**:東京方言では句頭の第 1 モーラが低くなる(句頭の上昇 / initial lowering)のが原則ですが、**抑制される条件**(句頭モーラにアクセント核がある/句頭が重音節)や、minor phrase 境界では上昇が弱まるという報告があります(docs/accent-resources.md)。listener が「二千二百円」で報告した `ニH` の高起も同じ現象で、**上書き表はこれを直接表現できます**
 
 ## 聴き方
 

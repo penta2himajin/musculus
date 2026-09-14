@@ -359,3 +359,19 @@ candidates were rendered (48 kHz, -20 LUFS, same phrase, in
 Both variant shapes are expressible with the override table we already ship,
 so whichever the ear picks can be declared in the annotations and protected
 by the gate straight away.
+
+### High-initial variants (2026-09-14)
+
+The listener asked for versions of 先週と比べると with the initial セ high. The
+override table expresses this directly (tones are set absolutely), so the
+phrase-level shape that the rule path could not reach is still available as
+data. Six candidates now sit in `ab-test-accent/`, paired by initial mora:
+
+| file | tones | note |
+|---|---|---|
+| shinshuu-1 | `LHHHHLHHHH` | reference (ク falls) |
+| shinshuu-2 | `LHHHHHHHHH` | 比べると continuous high |
+| shinshuu-3 | `LHHHHHHHHL` | continuous high, final ト low |
+| shinshuu-4 | `HHHHHLHHHH` | セ high + ク falls |
+| shinshuu-5 | `HHHHHHHHHH` | セ high + everything high |
+| shinshuu-6 | `HHHHHHHHHL` | セ high + final ト low |
