@@ -311,6 +311,8 @@ pub struct IrodoriAdapter {
     speaker_ready: Mutex<SpkState>,
     seed: u32,
     num_steps: usize,
+    /// Sessions that accepted the CoreML EP (empty on CPU runs).
+    coreml_sessions: Vec<String>,
 }
 
 #[derive(Clone)]
@@ -327,15 +329,59 @@ fn inference_error(what: &str, e: impl std::fmt::Display) -> TtsError {
     TtsError::Inference(format!("{what}: {e}"))
 }
 
+/// Which execution provider the ONNX sessions should prefer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ExecutionProvider {
+    /// CPU only — the default, available in every build.
+    #[default]
+    Cpu,
+    /// Apple CoreML (GPU/NE) with CPU fallback. Requires the `coreml`
+    /// feature; without it the sessions still build, CPU-only.
+    CoreMl(CoreMlOptions),
+}
+
+/// CoreML compute-unit selection (mirrors ORT's option).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum CoreMlUnits {
+    /// Let ORT choose among CPU/GPU/ANE.
+    #[default]
+    All,
+    /// Apple Silicon Neural Engine (with CPU).
+    NeuralEngine,
+    /// Apple GPU (with CPU).
+    Gpu,
+}
+
+/// CoreML model format (mirrors ORT's option).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum CoreMlFormat {
+    /// MLProgram — newer, broader operator support.
+    #[default]
+    MlProgram,
+    /// NeuralNetwork — older, better compatibility.
+    NeuralNetwork,
+}
+
+/// CoreML options.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct CoreMlOptions {
+    pub units: CoreMlUnits,
+    pub format: CoreMlFormat,
+}
+
 /// Load an Irodori export from its path.
 ///
 /// The exports use external-data tensors (`.onnx.data`), which ort
 /// validates relative to the model file's directory — so these load
 /// from the file, not from bytes (unlike the SBV2 exports, whose
 /// weights are embedded).
-fn load_session_by_name(dir: &Path, name: &str) -> Result<Mutex<Session>, TtsError> {
+fn load_session_by_name(
+    dir: &Path,
+    name: &str,
+    ep: ExecutionProvider,
+) -> Result<Mutex<Session>, TtsError> {
     let path = dir.join("onnx").join(format!("{name}.onnx"));
-    let session = ort::session::Session::builder()
+    let mut builder = ort::session::Session::builder()
         .map_err(|e| TtsError::ModelLoad(e.to_string()))?
         .with_optimization_level(ort::session::builder::GraphOptimizationLevel::Level3)
         .map_err(|e| TtsError::ModelLoad(e.to_string()))?
@@ -344,10 +390,90 @@ fn load_session_by_name(dir: &Path, name: &str) -> Result<Mutex<Session>, TtsErr
                 .map(|n| n.get())
                 .unwrap_or(1),
         )
-        .map_err(|e| TtsError::ModelLoad(e.to_string()))?
+        .map_err(|e| TtsError::ModelLoad(e.to_string()))?;
+    if let ExecutionProvider::CoreMl(options) = ep {
+        builder = with_coreml(builder, options)?;
+    }
+    let session = builder
         .commit_from_file(&path)
         .map_err(|e| TtsError::ModelLoad(format!("{}: {e}", path.display())))?;
     Ok(Mutex::new(session))
+}
+
+/// Append the CoreML EP (then CPU) to a session builder.
+///
+/// CPU is appended after CoreML on purpose: ORT assigns each node to
+/// the first provider that can run it, so nodes CoreML cannot handle
+/// fall back to CPU instead of failing session creation.
+#[cfg(feature = "coreml")]
+fn with_coreml(
+    builder: ort::session::builder::SessionBuilder,
+    options: CoreMlOptions,
+) -> Result<ort::session::builder::SessionBuilder, TtsError> {
+    use ort::ep::coreml::{ComputeUnits, ModelFormat};
+    let units = match options.units {
+        CoreMlUnits::All => ComputeUnits::All,
+        CoreMlUnits::NeuralEngine => ComputeUnits::CPUAndNeuralEngine,
+        CoreMlUnits::Gpu => ComputeUnits::CPUAndGPU,
+    };
+    let format = match options.format {
+        CoreMlFormat::MlProgram => ModelFormat::MLProgram,
+        CoreMlFormat::NeuralNetwork => ModelFormat::NeuralNetwork,
+    };
+    let mut coreml = ort::ep::CoreML::default()
+        .with_model_format(format)
+        .with_compute_units(units);
+    // CoreML caches its compiled model under ~/Library/Caches by
+    // default. In sandboxed/CI environments that path can be
+    // unwritable, in which case CoreML degrades or fails; this knob
+    // points the cache somewhere writable for measurement.
+    if let Ok(dir) = std::env::var("MUSCULUS_COREML_CACHE_DIR") {
+        coreml = coreml.with_model_cache_dir(dir);
+    }
+    let coreml = coreml.build();
+    let cpu = ort::ep::CPU::default().build();
+    builder
+        .with_execution_providers([coreml, cpu])
+        .map_err(|e| TtsError::ModelLoad(format!("coreml execution provider: {e}")))
+}
+
+/// Without the `coreml` feature the request cannot be honoured.
+#[cfg(not(feature = "coreml"))]
+fn with_coreml(
+    _builder: ort::session::builder::SessionBuilder,
+    _options: CoreMlOptions,
+) -> Result<ort::session::builder::SessionBuilder, TtsError> {
+    Err(TtsError::Config(
+        "CoreML requested but musculus was built without the `coreml` feature".into(),
+    ))
+}
+
+/// Load one session, falling back to CPU when CoreML rejects the graph.
+///
+/// CoreML's graph partitioning fails outright on some graphs (measured:
+/// `dacvae_encoder` trips an axis-range check inside ORT), which would
+/// abort session creation. The hot loop is the DiT, so the sensible
+/// posture is: give every session a chance at CoreML, keep the ones
+/// that accept it, and run the rest on CPU.
+fn load_session_tolerant(
+    dir: &Path,
+    name: &str,
+    ep: ExecutionProvider,
+    on_coreml: &mut Vec<String>,
+) -> Result<Mutex<Session>, TtsError> {
+    match load_session_by_name(dir, name, ep) {
+        Ok(session) => {
+            if matches!(ep, ExecutionProvider::CoreMl(_)) {
+                on_coreml.push(name.to_string());
+            }
+            Ok(session)
+        }
+        Err(err) if matches!(ep, ExecutionProvider::CoreMl(_)) => {
+            eprintln!("[irodori] {name}: CoreML EP rejected the graph ({err}); using CPU for this session");
+            Ok(load_session_by_name(dir, name, ExecutionProvider::Cpu)?)
+        }
+        Err(err) => Err(err),
+    }
 }
 
 /// Encode the reference voice: codec encoder (wav → latent), then
@@ -742,9 +868,16 @@ impl IrodoriAdapter {
     /// resampled to 48 kHz and LUFS-normalized to −16 LUFS before
     /// encoding.
     pub fn load(models_dir: impl AsRef<Path>, ref_wav: impl AsRef<Path>) -> Result<Self, TtsError> {
+        Self::load_with_ep(models_dir, ref_wav, ExecutionProvider::Cpu)
+    }
+
+    /// Load with an explicit execution provider (see [`ExecutionProvider`]).
+    pub fn load_with_ep(
+        models_dir: impl AsRef<Path>,
+        ref_wav: impl AsRef<Path>,
+        ep: ExecutionProvider,
+    ) -> Result<Self, TtsError> {
         let dir = models_dir.as_ref();
-        let load =
-            |name: &str| -> Result<Mutex<Session>, TtsError> { load_session_by_name(dir, name) };
         let tokenizer = tokenizers::Tokenizer::from_file(
             dir.join("tokenizer")
                 .join("llmjp_tok")
@@ -765,19 +898,39 @@ impl IrodoriAdapter {
         let mut padded = vec![0.0f32; padded_len];
         padded[..normalized.len()].copy_from_slice(&normalized);
 
-        let enc = load_session_by_name(dir, "dacvae_encoder")?;
-        let speaker_session = load_session_by_name(dir, "speaker_encoder")?;
-        let speaker_state = prepare_speaker_state(&enc, &speaker_session, &padded)?;
+        // The closure records which sessions accepted CoreML; keep it
+        // (and its borrow) inside this scope so the vector can move into
+        // the adapter afterwards.
+        let (text, duration, dit, dac, speaker_state, coreml_sessions) = {
+            let mut coreml_sessions: Vec<String> = Vec::new();
+            let mut load = |name: &str| -> Result<Mutex<Session>, TtsError> {
+                load_session_tolerant(dir, name, ep, &mut coreml_sessions)
+            };
+            let enc = load("dacvae_encoder")?;
+            let speaker_session = load("speaker_encoder")?;
+            let speaker_state = prepare_speaker_state(&enc, &speaker_session, &padded)?;
+            let text = load("text_encoder")?;
+            let duration = load("duration")?;
+            let dit = load("dit")?;
+            let dac = load("dacvae_decoder")?;
+            (text, duration, dit, dac, speaker_state, coreml_sessions)
+        };
         Ok(Self {
-            text: load("text_encoder")?,
-            duration: load("duration")?,
-            dit: load("dit")?,
-            dac: load("dacvae_decoder")?,
+            text,
+            duration,
+            dit,
+            dac,
             tokenizer,
             speaker_ready: Mutex::new(speaker_state),
             seed: 0,
             num_steps: NUM_STEPS,
+            coreml_sessions,
         })
+    }
+
+    /// Names of the sessions that accepted the CoreML EP.
+    pub fn coreml_sessions(&self) -> &[String] {
+        &self.coreml_sessions
     }
 
     /// Builder: sampling seed.

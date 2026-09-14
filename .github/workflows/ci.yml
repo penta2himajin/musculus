@@ -22,8 +22,12 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libasound2-dev
       - name: Format check
         run: cargo fmt --all -- --check
+      # Explicit feature list rather than --all-features: `coreml` is
+      # Apple-only (ORT CoreML EP) and must not be enabled on the Linux
+      # runners. Add new cross-platform features here (and check the
+      # Apple-only ones locally with the pre-push hook).
       - name: Clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        run: cargo clippy --workspace --all-targets --features onnx,wav,testing,playback -- -D warnings
       - name: Test
         run: cargo test --workspace
       # The L3 reading gate (tests/l3_ja.rs) is pure text and runs

@@ -1,6 +1,6 @@
 {
   "name": "irodori-rtf-spike",
-  "date": "2026-09-13",
+  "date": "2026-09-13 (updated: CoreML EP measurement, M4 Step B)",
   "milestone": "M4 Step A",
   "engine": "IrodoriAdapter (ort 2.0.0-rc.13, CPU EP, Level3) — RF Euler loop in Rust, ported from irodori-tts-webgpu runtime/pipeline.mjs (bit-faithful reference, corr=1.0)",
   "artifacts": {
@@ -39,7 +39,65 @@
         "rtf": 3.057,
         "note": "fixed costs amortize with longer audio"
       }
-    ]
+    ],
+    "cpu_steps_curve": {
+      "note": "Apple M1 Max, CPU EP, release, こんにちは (1.360 s audio), warm p50",
+      "points": [
+        {
+          "steps": 5,
+          "rtf": 1.078
+        },
+        {
+          "steps": 10,
+          "rtf": 1.663
+        },
+        {
+          "steps": 20,
+          "rtf": 2.896
+        },
+        {
+          "steps": 40,
+          "rtf": 5.163
+        }
+      ],
+      "fit": "RTF ≈ 0.49 + 0.117 × steps (intercept ~0.49 = non-DiT cost: encode + duration + DAC decode)"
+    },
+    "coreml_ep": {
+      "feature": "musculus [coreml] = ort/coreml, ORT CoreML EP via ort 2.0.0-rc.13 (onnxruntime 1.28)",
+      "environment": "sandbox could not write CoreML’s default cache (~/Library/Caches); re-measured with MUSCULUS_COREML_CACHE_DIR inside the workspace — conclusions unchanged (session load 28 s with a writable cache)",
+      "mlprogram": {
+        "sessions_accepted": [
+          "duration"
+        ],
+        "sessions_rejected": {
+          "dacvae_encoder": "HandleNegativeAxis: axis 3 not in [-3,2]",
+          "dacvae_decoder": "HandleNegativeAxis: axis 3 not in [-3,2]",
+          "dit": "HandleNegativeAxis: axis 1 not in [-1,0]",
+          "text_encoder": "Failed to build the model execution plan (error -14)",
+          "speaker_encoder": "Failed to build the model execution plan (error -14)"
+        },
+        "warm_p50_rtf": 2.689,
+        "verdict": "no speedup — the DiT (80 of ~80 forwards) stays on CPU"
+      },
+      "neural_network_format": {
+        "sessions_accepted": [
+          "dacvae_encoder",
+          "speaker_encoder",
+          "text_encoder",
+          "duration",
+          "dit",
+          "dacvae_decoder"
+        ],
+        "session_load_seconds": 27.98,
+        "warm_p50_rtf": 4.724,
+        "verdict": "all graphs partition, but ~1.8x SLOWER than CPU EP and 28 s to load"
+      },
+      "numerical_fidelity": {
+        "cpu_vs_mlprogram_correlation": 1.0,
+        "cpu_vs_neural_network_correlation": 0.9999,
+        "verdict": "CoreML does not change the audio materially — the problem is purely performance"
+      }
+    }
   },
   "comparison": {
     "sbv2_rtf_p50": 0.199,
@@ -49,10 +107,17 @@
       "fewer steps (20 steps -> ~2.6; quality must be re-measured)",
       "CoreML EP (Apple GPU/ANE) — untested here, likely the biggest lever on this hardware",
       "CFG already batch-1 outside the guidance window"
+    ],
+    "realtime_verdict": "CoreML is NOT the realtime lever for this model set: MLProgram cannot partition the DiT, NeuralNetwork partitions everything but runs slower than the CPU EP. On CPU, RTF ≈ 0.49 + 0.117 × steps, so RTF < 1.0 would need ≲ 4 steps, where flow-matching quality is doubtful. Realtime (RTF < 1) is therefore not reachable for Irodori-500M-v3 with the measured levers.",
+    "remaining_levers": [
+      "fewer steps with a quality check (10 steps: RTF 1.66; 5 steps: 1.08) — needs listening/CER validation",
+      "fp16 ONNX exports (onnx_fp16/ in the artifact repo) — untested on CPU",
+      "Irodori v4.1-Small (own ONNX export required) — different size/latency, unknown",
+      "dual-engine posture: SBV2JE (RTF 0.199) for realtime, Irodori for batch quality"
     ]
   },
   "tolerance_policy": {
-    "absolute": "for the two-way-voice endgame, CPU RTF must drop below 1.0 — not met; CoreML/GPU path is the next measurement"
+    "absolute": "batch use: RTF < 6.0 at 40 steps (met: 5.16); realtime use: RTF < 1.0 (not met by any measured Irodori configuration — needs a different engine or model)"
   },
   "notes": [
     "Reference voice is the SBV2 baseline's own output, so the ear comparison (M4 protocol) runs on the same voice for both engines.",

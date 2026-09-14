@@ -28,3 +28,6 @@
 
 # macOS
 .DS_Store
+
+# CoreML compiled-model cache (measurement knob)
+/.coreml-cache/

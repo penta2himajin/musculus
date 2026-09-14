@@ -91,6 +91,11 @@ onnx = [
     "dep:rubato",
 ]
 
+# Apple hardware acceleration (CoreML EP) for the ONNX sessions.
+# Opt-in: it changes which execution provider ORT prefers, and the
+# default build must stay lean and CPU-only.
+coreml = ["onnx", "ort/coreml"]
+
 playback = ["dep:cpal"]
 
 # WAV file I/O. Off by default; the `cli` feature implies it.
