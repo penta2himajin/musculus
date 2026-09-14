@@ -25,21 +25,35 @@ struct SynthArgs {
     /// Read the text from a UTF-8 file instead of the argument.
     #[arg(long)]
     file: Option<PathBuf>,
-    /// Voice id (file stem of a .sbv2 in the model directory).
-    /// Defaults to the first voice found.
+    /// Synthesis engine: sbv2 (realtime default) or irodori (quality).
+    /// The ja posture is two engines; see docs/decisions/0005.
+    #[arg(long, default_value = "sbv2")]
+    engine: String,
+    /// Model directory. Defaults to vendor/sbv2 for the sbv2 engine and
+    /// vendor/irodori for the irodori engine.
+    #[arg(long)]
+    dir: Option<PathBuf>,
+    /// Voice id (file stem of a .sbv2); sbv2 only.
     #[arg(long)]
     voice: Option<String>,
-    /// Style id within the voice's style table (0 = neutral).
-    #[arg(long, default_value_t = 0)]
-    style: i32,
-    /// Style blend weight: 0 = neutral mean, 1 = raw style.
-    #[arg(long, default_value_t = 1.0)]
-    style_weight: f32,
-    /// Directory with tokenizer.json, deberta.onnx and *.sbv2 voices.
-    #[arg(long, default_value = "vendor/sbv2")]
-    dir: PathBuf,
+    /// Style id within the voice's style table (0 = neutral); sbv2 only.
+    #[arg(long)]
+    style: Option<i32>,
+    /// Style blend weight: 0 = neutral mean, 1 = raw style; sbv2 only.
+    #[arg(long)]
+    style_weight: Option<f32>,
+    /// Reference voice WAV for the irodori engine (any mono rate; it is
+    /// resampled to 48 kHz and loudness-normalized).
+    #[arg(long)]
+    ref_wav: Option<PathBuf>,
+    /// Rectified-flow Euler steps; irodori only (default 40).
+    #[arg(long)]
+    steps: Option<usize>,
+    /// Sampling seed; irodori only (default 0).
+    #[arg(long)]
+    seed: Option<u32>,
     /// User term dictionary (JSON array of {term, aliases}); applied
-    /// before the frontend. The dictionary is yours — musculus
+    /// before whichever engine runs. The dictionary is yours — musculus
     /// bundles none (docs/model-licenses.md).
     #[arg(long)]
     dict: Option<PathBuf>,
@@ -61,10 +75,11 @@ fn main() {
 }
 
 #[cfg(feature = "onnx")]
-use musculus::prelude::{TextProcessor as _, TtsAdapter as _};
+use musculus::prelude::TextProcessor as _;
 
+/// Read the text and apply the user dictionary — engine-independent.
 #[cfg(feature = "onnx")]
-fn run_synth(args: SynthArgs) -> Result<(), String> {
+fn prepare_text(args: &SynthArgs) -> Result<String, String> {
     let text = match (&args.text, &args.file) {
         (Some(text), None) => text.clone(),
         (None, Some(path)) => {
@@ -77,7 +92,6 @@ fn run_synth(args: SynthArgs) -> Result<(), String> {
     if text.is_empty() {
         return Err("text is empty".into());
     }
-
     let text = match &args.dict {
         Some(path) => {
             let file = std::fs::read(path).map_err(|e| format!("read {}: {e}", path.display()))?;
@@ -98,30 +112,96 @@ fn run_synth(args: SynthArgs) -> Result<(), String> {
         }
         None => text,
     };
+    Ok(text)
+}
 
-    let adapter = musculus::sbv2::Sbv2Adapter::load_dir(&args.dir)
-        .map_err(|e| format!("load models from {}: {e}", args.dir.display()))?;
-    let adapter = adapter
-        .with_style_id(args.style)
-        .with_style_weight(args.style_weight);
+/// Turn the CLI flags into an engine description, rejecting flags that
+/// belong to the other engine (explicit beats silent).
+#[cfg(feature = "onnx")]
+fn resolve_engine(args: &SynthArgs) -> Result<musculus::factory::Engine, String> {
+    use musculus::factory as f;
+    f::parse_engine_name(&args.engine)?;
+    match args.engine.as_str() {
+        "sbv2" => {
+            if args.ref_wav.is_some() || args.steps.is_some() {
+                return Err("--ref-wav/--steps only apply to --engine irodori".into());
+            }
+            Ok(f::Engine::Sbv2 {
+                dir: args
+                    .dir
+                    .clone()
+                    .unwrap_or_else(|| PathBuf::from(f::SBV2_DEFAULT_DIR)),
+                voice: args.voice.clone(),
+                style_id: args.style.unwrap_or(0),
+                style_weight: args.style_weight.unwrap_or(1.0),
+            })
+        }
+        #[cfg(feature = "wav")]
+        "irodori" => {
+            if args.voice.is_some() || args.style.is_some() || args.style_weight.is_some() {
+                return Err(
+                    "the irodori engine takes its voice from --ref-wav; --voice/--style/--style-weight are sbv2-only"
+                        .into(),
+                );
+            }
+            Ok(f::Engine::Irodori {
+                dir: args
+                    .dir
+                    .clone()
+                    .unwrap_or_else(|| PathBuf::from(f::IRODORI_DEFAULT_DIR)),
+                ref_wav: args
+                    .ref_wav
+                    .clone()
+                    .unwrap_or_else(|| PathBuf::from(f::IRODORI_DEFAULT_REF)),
+                steps: args.steps.unwrap_or(f::IRODORI_DEFAULT_STEPS),
+                seed: args.seed.unwrap_or(0),
+            })
+        }
+        other => Err(format!("engine {other:?} is not available in this build")),
+    }
+}
+
+/// Per-engine license reminder (the voice's terms follow the source).
+#[cfg(feature = "onnx")]
+fn credit_reminder(engine: &musculus::factory::Engine) {
+    match engine {
+        musculus::factory::Engine::Sbv2 { .. } => eprintln!(
+            "voice credit reminder: each voice carries its own license terms — see \
+             docs/model-licenses.md (tsukuyomi: つくよみちゃん(CV. 夢前黎), credit \
+             required, https://tyc.rei-yumesaki.net/)"
+        ),
+        #[cfg(feature = "wav")]
+        musculus::factory::Engine::Irodori { ref_wav, .. } => eprintln!(
+            "voice credit reminder: Irodori clones the voice of {} — that reference's \
+             license terms apply to the output (the shipped default reference is a \
+             tsukuyomi/SBV2 render; see docs/model-licenses.md)",
+            ref_wav.display()
+        ),
+    }
+}
+
+#[cfg(feature = "onnx")]
+fn run_synth(args: SynthArgs) -> Result<(), String> {
+    let text = prepare_text(&args)?;
+    let engine = resolve_engine(&args)?;
+    credit_reminder(&engine);
+
+    let adapter = engine
+        .build()
+        .map_err(|e| format!("load models from {}: {e}", engine.model_dir().display()))?;
 
     let mut segment = musculus::prelude::SpeechSegment::new(text);
-    if let Some(voice) = &args.voice {
-        segment = segment.with_voice(voice.clone());
+    if let Some(voice) = engine.voice_hint() {
+        segment = segment.with_voice(voice);
     }
 
-    eprintln!(
-        "voice credit reminder: each voice carries its own license terms — see \
-         docs/model-licenses.md (tsukuyomi: つくよみちゃん(CV. 夢前黎), credit \
-         required, https://tyc.rei-yumesaki.net/)"
-    );
-
+    let t0 = std::time::Instant::now();
     let synthesis = tokio::runtime::Runtime::new()
         .map_err(|e| format!("tokio runtime: {e}"))?
         .block_on(adapter.synthesize(std::slice::from_ref(&segment)))
         .map_err(|e| format!("synthesis: {e}"))?;
 
-    // Concatenate chunk samples; the SBV2 decode rate is uniform.
+    // Concatenate chunk samples; an engine decodes at one rate.
     let sample_rate = synthesis
         .sample_rate()
         .ok_or_else(|| "synthesis produced no audio".to_string())?;
@@ -136,12 +216,17 @@ fn run_synth(args: SynthArgs) -> Result<(), String> {
     musculus::wav::write_wav(&args.out, &chunk)
         .map_err(|e| format!("write {}: {e}", args.out.display()))?;
 
+    let audio_secs = synthesis.duration().as_secs_f64();
+    let wall = t0.elapsed().as_secs_f64();
     eprintln!(
-        "wrote {}: {:.2} s @ {} Hz ({} chunks)",
+        "wrote {}: {:.2} s @ {} Hz ({}) | engine={} wall {:.2} s RTF {:.3}",
         args.out.display(),
-        synthesis.duration().as_secs_f64(),
+        audio_secs,
         sample_rate,
-        synthesis.audio.len()
+        synthesis.audio.len(),
+        engine.name(),
+        wall,
+        wall / audio_secs,
     );
     Ok(())
 }

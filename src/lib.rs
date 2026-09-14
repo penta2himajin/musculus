@@ -29,6 +29,10 @@ pub mod types;
 #[cfg(feature = "onnx")]
 pub mod sbv2;
 
+// Engine selection (the TTS-side mirror of euhadra's router).
+#[cfg(feature = "onnx")]
+pub mod factory;
+
 // The M4 comparison candidate (ADR-0002): Irodori-TTS RF synthesis.
 // Reference-voice loading reads WAVs, hence the wav gate.
 #[cfg(all(feature = "onnx", feature = "wav"))]

@@ -1,6 +1,6 @@
 {
   "name": "cer-ja-roundtrip",
-  "date": "2026-09-13 (updated: JaNormalizer landed same day)",
+  "date": "2026-09-13 (updated: Irodori rows, step counts, dictionary comparison)",
   "milestone": "M2",
   "metric": "round-trip CER (docs/evaluation.md §2): musculus synthesis → ruler ASR transcription → CER. Two flavours: text-level (cer_normalized, orthography noise included) and reading-level (both sides through the same ja frontend, homophone-fair phoneme comparison)",
   "ruler": {
@@ -35,6 +35,35 @@
       "mean_reading_cer": 0.05,
       "mean_rtf": 0.213,
       "source": "run.json (first run, before JaNormalizer)"
+    },
+    "irodori_40steps": {
+      "mean_text_cer": 0.104,
+      "mean_reading_cer": 0.086,
+      "mean_rtf": 3.829,
+      "source": "irodori-40steps.json",
+      "note": "engine selected via the new factory; sentences as-is (no dictionary)"
+    },
+    "irodori_5steps": {
+      "mean_text_cer": 0.144,
+      "mean_reading_cer": 0.086,
+      "mean_rtf": 0.834,
+      "source": "irodori-5steps.json",
+      "note": "reading CER identical to 40 steps; every sentence 0.750-0.910 RTF (faster than realtime)"
+    },
+    "with_dictionary": {
+      "sbv2": {
+        "mean_text_cer": 0.089,
+        "mean_reading_cer": 0.032,
+        "mean_rtf": 0.193,
+        "source": "sbv2-withdict.json"
+      },
+      "irodori_5steps": {
+        "mean_text_cer": 0.106,
+        "mean_reading_cer": 0.039,
+        "mean_rtf": 0.872,
+        "source": "irodori-5steps-withdict.json"
+      },
+      "finding": "without the dictionary the reading-CER gap (Irodori 0.086 vs SBV2 0.035) is driven almost entirely by the coined Latin word musculus; with it the two engines converge (0.039 vs 0.032). The remaining non-zero row is the known Wi-Fi ruler noise (0.312) in both."
     }
   },
   "tolerance_policy": {
@@ -45,6 +74,8 @@
     "Reading CER is the primary intelligibility number; text CER is kept for literature comparability and to catch orthography-level drift.",
     "The percent/date rows quantify the L3 gap worklist acoustically — ΔCER after each normalization fix lands here as a new row.",
     "The ruler is shared with euhadra's L1 (same model + adapter), so ja CER numbers are comparable across the two projects.",
-    "Manual run only (2.4 GB ruler): cargo run --release --features onnx,wav --example eval_cer -- --json docs/benchmarks/cer-ja/run.json"
+    "Manual run only (2.4 GB ruler): cargo run --release --features onnx,wav --example eval_cer -- --json docs/benchmarks/cer-ja/run.json",
+    "2026-09-13: Irodori has no kanji-reading failures on this set — its reading errors were the coined-Latin rows (musculus) plus the ruler-noise Wi-Fi row, so the earlier \"kanji weakness\" hypothesis is not what the CER gap showed.",
+    "Fixed costs dominate short utterances: a 1.36 s utterance measures RTF 1.08 at 5 steps while the 2.1-5.7 s sentence set measures 0.75-0.91 at the same step count. Quote the utterance length with any RTF."
   ]
 }

@@ -22,16 +22,28 @@ use std::path::{Path, PathBuf};
 use clap::Parser;
 use euhadra::parakeet::ParakeetAdapter;
 use euhadra::traits::AsrAdapter as _;
-use musculus::prelude::{SpeechNormalizer as _, TextProcessor as _, TtsAdapter as _};
+use musculus::prelude::{SpeechNormalizer as _, TextProcessor as _};
 use musculus::sbv2::ja::JaFrontend;
 use rubato::{FftFixedIn, Resampler};
 use serde::Serialize;
 
 #[derive(Parser)]
 struct Args {
-    /// Model directory (setup_sbv2.sh output).
-    #[arg(long, default_value = "vendor/sbv2")]
-    dir: PathBuf,
+    /// Synthesis engine: sbv2 (default) or irodori.
+    #[arg(long, default_value = "sbv2")]
+    engine: String,
+    /// Model directory. Defaults per engine (vendor/sbv2 or vendor/irodori).
+    #[arg(long)]
+    dir: Option<PathBuf>,
+    /// Voice id (sbv2 only).
+    #[arg(long)]
+    voice: Option<String>,
+    /// Reference voice WAV (irodori only).
+    #[arg(long)]
+    ref_wav: Option<PathBuf>,
+    /// Rectified-flow Euler steps (irodori only; default 40).
+    #[arg(long)]
+    steps: Option<usize>,
     /// Ruler ASR bundle (setup_ruler_asr.sh output).
     #[arg(long, default_value = "vendor/parakeet_ja")]
     ruler: PathBuf,
@@ -61,6 +73,7 @@ struct SentenceResult {
 
 #[derive(Serialize)]
 struct Report {
+    engine: String,
     ruler: String,
     mean_text_cer: f64,
     mean_reading_cer: f64,
@@ -68,19 +81,31 @@ struct Report {
     items: Vec<SentenceResult>,
 }
 
-/// Resample mono 44.1 kHz → 16 kHz with an FFT-based resampler so the
-/// aliasing noise does not bias the ruler (linear interpolation would
-/// systematically hurt the ASR and inflate our own CER).
-fn resample_44100_to_16000(samples: &[f32]) -> Result<Vec<f32>, String> {
-    // Fixed 441-sample input chunks; rubato derives the 160-sample
-    // output chunks from the rates (44100:16000 = 441:160, exact).
-    let mut resampler =
-        FftFixedIn::<f32>::new(44100, 16000, 441, 4, 1).map_err(|e| format!("rubato: {e}"))?;
-    let mut out = Vec::with_capacity(samples.len() * 160 / 441 + 160);
-    for chunk in samples.chunks(441) {
+fn gcd_usize(a: usize, b: usize) -> usize {
+    if b == 0 {
+        a
+    } else {
+        gcd_usize(b, a % b)
+    }
+}
+
+/// Resample mono audio to 16 kHz (the ruler's rate) with an FFT-based
+/// resampler so aliasing does not bias the ASR and inflate our own CER.
+/// Works for both engines' native rates (SBV2 44.1 kHz, Irodori 48 kHz).
+fn resample_to_16000(samples: &[f32], input_rate: u32) -> Result<Vec<f32>, String> {
+    if input_rate == 16_000 {
+        return Ok(samples.to_vec());
+    }
+    let min_chunk = input_rate as usize / gcd_usize(input_rate as usize, 16_000);
+    // A multiple of min_chunk keeps the in/out ratio exact.
+    let chunk_in = min_chunk * ((441 / min_chunk).max(1));
+    let mut resampler = FftFixedIn::<f32>::new(input_rate as usize, 16_000, chunk_in, 4, 1)
+        .map_err(|e| format!("rubato: {e}"))?;
+    let mut out = Vec::with_capacity(samples.len() * 16_000 / input_rate as usize + 16_000);
+    for chunk in samples.chunks(chunk_in) {
         let mut padded = chunk.to_vec();
-        if padded.len() < 441 {
-            padded.resize(441, 0.0);
+        if padded.len() < chunk_in {
+            padded.resize(chunk_in, 0.0);
         }
         let frames = resampler
             .process(&[padded], None)
@@ -88,7 +113,7 @@ fn resample_44100_to_16000(samples: &[f32]) -> Result<Vec<f32>, String> {
         out.extend_from_slice(&frames[0]);
     }
     // Trim the zero-padded tail to the true expected length.
-    let expected = samples.len() as u64 * 16000 / 44100;
+    let expected = samples.len() as u64 * 16_000 / input_rate as u64;
     out.truncate(expected as usize);
     Ok(out)
 }
@@ -132,8 +157,35 @@ fn load_sentences(path: &Path) -> Result<Vec<(String, String)>, String> {
 fn main() -> Result<(), String> {
     let args = Args::parse();
 
-    let adapter = musculus::sbv2::Sbv2Adapter::load_dir(&args.dir)
-        .map_err(|e| format!("load models: {e}"))?;
+    use musculus::factory as f;
+    f::parse_engine_name(&args.engine)?;
+    let engine = match args.engine.as_str() {
+        "sbv2" => f::Engine::Sbv2 {
+            dir: args
+                .dir
+                .clone()
+                .unwrap_or_else(|| PathBuf::from(f::SBV2_DEFAULT_DIR)),
+            voice: args.voice.clone(),
+            style_id: 0,
+            style_weight: 1.0,
+        },
+        "irodori" => f::Engine::Irodori {
+            dir: args
+                .dir
+                .clone()
+                .unwrap_or_else(|| PathBuf::from(f::IRODORI_DEFAULT_DIR)),
+            ref_wav: args
+                .ref_wav
+                .clone()
+                .unwrap_or_else(|| PathBuf::from(f::IRODORI_DEFAULT_REF)),
+            steps: args.steps.unwrap_or(f::IRODORI_DEFAULT_STEPS),
+            seed: 0,
+        },
+        other => return Err(format!("unknown engine: {other}")),
+    };
+    let adapter = engine
+        .build()
+        .map_err(|e| format!("load models from {}: {e}", engine.model_dir().display()))?;
     let ruler = ParakeetAdapter::load(&args.ruler).map_err(|e| format!("load ruler: {e}"))?;
     let frontend = JaFrontend::new().map_err(|e| format!("ja frontend: {e}"))?;
 
@@ -163,7 +215,10 @@ fn main() -> Result<(), String> {
             None => text.clone(),
         };
 
-        let segment = musculus::prelude::SpeechSegment::new(rewritten.clone());
+        let mut segment = musculus::prelude::SpeechSegment::new(rewritten.clone());
+        if let Some(voice) = engine.voice_hint() {
+            segment = segment.with_voice(voice);
+        }
         let t0 = std::time::Instant::now();
         let synthesis = runtime
             .block_on(adapter.synthesize(std::slice::from_ref(&segment)))
@@ -187,7 +242,7 @@ fn main() -> Result<(), String> {
                 .map_err(|e| format!("write {wav_path:?}: {e}"))?;
         }
 
-        let at_16k = resample_44100_to_16000(&samples)?;
+        let at_16k = resample_to_16000(&samples, synthesis.sample_rate().unwrap_or(44_100))?;
         let ruler_chunk = euhadra::types::AudioChunk {
             samples: at_16k,
             sample_rate: 16_000,
@@ -232,6 +287,7 @@ fn main() -> Result<(), String> {
         }
     };
     let report = Report {
+        engine: engine.name().to_string(),
         ruler: format!(
             "parakeet-tdt_ctc-0.6b-ja ONNX (euhadra L1 ja ruler, via euhadra {})",
             euhadra_version()
