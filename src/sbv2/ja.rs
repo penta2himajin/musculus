@@ -487,6 +487,54 @@ pub fn phones_to_kana(phones: &[String]) -> Result<String, JaError> {
     Ok(results.concat())
 }
 
+/// The padded phone stream plus its tones → `(mora, tone)` pairs, with
+/// boundary pads dropped and punctuation kept at tone 0.
+///
+/// This is the accent view of a reading: `tone` is the H/L feature the
+/// VITS2 decode receives (1 = high), one entry per mora. Used by the L3
+/// accent report, which exists because the phoneme-level gate cannot see
+/// a wrong pitch pattern (docs/evaluation.md §3.4).
+pub fn kana_tone(phones: &[String], tones: &[i32]) -> Result<Vec<(String, i32)>, JaError> {
+    let end = phones.len().min(tones.len()).saturating_sub(1);
+    let mut results: Vec<(String, i32)> = Vec::new();
+    let mut current_mora = String::new();
+    for i in 1..end {
+        let phone = &phones[i];
+        let tone = tones[i];
+        if phone == "_" {
+            continue;
+        }
+        if PUNCTUATIONS.contains(&phone.as_str()) {
+            results.push((phone.clone(), 0));
+            continue;
+        }
+        if CONSONANTS.contains(phone) {
+            // The mora's tone comes from its vowel; the consonant/vowel
+            // pair shares one tone in this scheme.
+            current_mora = phone.clone();
+        } else {
+            current_mora.push_str(phone);
+            let kana = MORA_PHONEMES_TO_MORA_KATA
+                .get(&current_mora)
+                .ok_or_else(|| {
+                    JaError::ValueError(format!("phoneme pair is not a mora: {current_mora:?}"))
+                })?
+                .clone();
+            results.push((kana, tone.clamp(0, 1)));
+            current_mora.clear();
+        }
+    }
+    Ok(results)
+}
+
+/// Render `(mora, tone)` pairs as `(kana, "H/L")` for reports.
+pub fn tone_string(pairs: &[(String, i32)]) -> String {
+    pairs
+        .iter()
+        .map(|(_, tone)| if *tone == 0 { 'L' } else { 'H' })
+        .collect()
+}
+
 /// Fold hiragana to katakana, character-wise (kana fold, euhadra's
 /// MatchPolicy table: hiragana and katakana spell the same word).
 pub fn hiragana_to_katakana(text: &str) -> String {

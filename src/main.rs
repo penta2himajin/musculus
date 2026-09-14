@@ -52,6 +52,15 @@ struct SynthArgs {
     /// Sampling seed; irodori only (default 0).
     #[arg(long)]
     seed: Option<u32>,
+    /// Split the text into sentences and synthesize each separately,
+    /// joining with --sentence-silence. The reference implementations do
+    /// this for long input; it is also the "breathless delivery"
+    /// hypothesis under test (docs/benchmarks/listening-log.md).
+    #[arg(long)]
+    split_sentences: bool,
+    /// Silence inserted between sentences when --split-sentences is set.
+    #[arg(long, default_value_t = 0.4)]
+    sentence_silence: f32,
     /// User term dictionary (JSON array of {term, aliases}); applied
     /// before whichever engine runs. The dictionary is yours — musculus
     /// bundles none (docs/model-licenses.md).
@@ -190,40 +199,57 @@ fn run_synth(args: SynthArgs) -> Result<(), String> {
         .build()
         .map_err(|e| format!("load models from {}: {e}", engine.model_dir().display()))?;
 
-    let mut segment = musculus::prelude::SpeechSegment::new(text);
-    if let Some(voice) = engine.voice_hint() {
-        segment = segment.with_voice(voice);
+    // One segment per sentence when asked, otherwise the whole text.
+    let pieces = if args.split_sentences {
+        musculus::segmenter::split_sentences(&text)
+    } else {
+        vec![text]
+    };
+    if pieces.is_empty() {
+        return Err("text is empty".into());
     }
+    let segments: Vec<musculus::prelude::SpeechSegment> = pieces
+        .into_iter()
+        .map(|piece| {
+            let mut segment = musculus::prelude::SpeechSegment::new(piece);
+            if let Some(voice) = engine.voice_hint() {
+                segment = segment.with_voice(voice);
+            }
+            segment
+        })
+        .collect();
 
     let t0 = std::time::Instant::now();
     let synthesis = tokio::runtime::Runtime::new()
         .map_err(|e| format!("tokio runtime: {e}"))?
-        .block_on(adapter.synthesize(std::slice::from_ref(&segment)))
+        .block_on(adapter.synthesize(&segments))
         .map_err(|e| format!("synthesis: {e}"))?;
 
-    // Concatenate chunk samples; an engine decodes at one rate.
-    let sample_rate = synthesis
-        .sample_rate()
-        .ok_or_else(|| "synthesis produced no audio".to_string())?;
-    let mut samples = Vec::new();
-    for chunk in &synthesis.audio {
-        samples.extend_from_slice(&chunk.samples);
+    // Concatenate chunk samples; an engine decodes at one rate. When the
+    // text was split, the joins get a breath of silence.
+    let chunk = if args.split_sentences {
+        musculus::segmenter::stitch_with_silence(&synthesis.audio, args.sentence_silence)
+    } else {
+        musculus::segmenter::stitch_with_silence(&synthesis.audio, 0.0)
     }
-    let chunk = musculus::types::AudioChunk {
-        samples,
-        sample_rate,
-    };
+    .ok_or_else(|| "synthesis produced no audio".to_string())?;
+    let sample_rate = chunk.sample_rate;
     musculus::wav::write_wav(&args.out, &chunk)
         .map_err(|e| format!("write {}: {e}", args.out.display()))?;
 
     let audio_secs = synthesis.duration().as_secs_f64();
     let wall = t0.elapsed().as_secs_f64();
     eprintln!(
-        "wrote {}: {:.2} s @ {} Hz ({}) | engine={} wall {:.2} s RTF {:.3}",
+        "wrote {}: {:.2} s @ {} Hz ({} chunk(s){}) | engine={} wall {:.2} s RTF {:.3}",
         args.out.display(),
         audio_secs,
         sample_rate,
         synthesis.audio.len(),
+        if args.split_sentences {
+            format!(", split at {:.2} s silence", args.sentence_silence)
+        } else {
+            String::new()
+        },
         engine.name(),
         wall,
         wall / audio_secs,

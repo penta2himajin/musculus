@@ -1,0 +1,7 @@
+{"input": "1,200", "note": "listener caught せんに→ひゃく (flat) against the natural せんに↑ひゃく; expected_tones to be filled in by a native speaker"}
+{"input": "1,200円", "note": "the sentence that exposed the accent error"}
+{"input": "2026年2月14日", "note": "date compound: check ねん/がつ pitch"}
+{"input": "午前10時", "note": "time"}
+{"input": "こんにちは", "note": "greeting"}
+{"input": "猫が座って動かない。", "note": "plain sentence"}
+{"input": "ありがとうございました", "note": "polite closing"}

@@ -22,6 +22,7 @@
 pub mod dictionary;
 pub mod eval;
 pub mod prelude;
+pub mod segmenter;
 pub mod traits;
 pub mod types;
 
