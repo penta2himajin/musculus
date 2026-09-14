@@ -10,7 +10,7 @@ fetched by a setup script or supplied by the consumer.
 | Resource | Licence | How it would be used | Status |
 |---|---|---|---|
 | [tdmelodic](https://github.com/PKSHATechnology-Research/tdmelodic) — Japanese accent dictionary generator (PKSHATechnology-Research) | **BSD-3-Clause** | Generates a large-vocabulary accent dictionary from UniDic + NEologd with a neural estimator ([Tachibana & Katayama, ICASSP 2020](https://doi.org/10.1109/ICASSP40776.2020.9054081)). This is the intended source of the standard-accent layer: emit word entries (surface, reading, accent type, mora count) and feed them to the frontend so the *labels* are right | not started; needs Python/torch and a dictionary build |
-| [tdmelodic_openjtalk](https://github.com/sarulab-speech/tdmelodic_openjtalk) | **unverified** | Turns tdmelodic output into an OpenJTalk dictionary — the closest fit for jpreprocess, which is OpenJTalk-derived | check the licence first, then whether jpreprocess accepts an externally built dictionary |
+| [tdmelodic_openjtalk](https://github.com/sarulab-speech/tdmelodic_openjtalk) | **no licence file** (GitHub reports none) → all rights reserved by default | Would have turned tdmelodic output into an OpenJTalk dictionary, but **we must not use this code**. The step it performs is a data-format conversion we can implement ourselves from tdmelodic's BSD-3 output | **rejected on licence grounds**; write our own converter instead |
 | [UniDic](https://clrd.ninjal.ac.jp/unidic/) | modern editions **GPLv2 / LGPLv2.1 / modified BSD (triple)** — commercial use free | Vocabulary + accent source for tdmelodic | licence confirmed on the CLRD page |
 | [UniDic non-core data](https://teru-oka-1933.github.io/unidic_non_core/) | **Apache-2.0** (changed from MIT in 2019-08) | Additional information keyed by UniDic short-unit IDs. The page checked publishes katakana-abbreviation and compound-splitting lists; the accent annotation from KAKEN 19K13173 was not on that page — locate it before relying on it | partially verified |
 | [koniwa (声庭)](https://github.com/koniwa/koniwa) | annotations **CC0**, programs **Apache-2.0**, audio CC BY / public domain | Openly licensed **prosody-annotated Japanese speech**: gold for the L3 accent gate and a verification corpus for the accent layer, instead of hand-authoring everything | not started; confirm the annotation schema carries accent (mora H/L or nucleus position) |
@@ -44,17 +44,25 @@ and `examples/accent_report.rs --accent <file>` verifies them:
 [ok] 二千二百円   tones HHLLHHHL (frontend alone: LHLLHHLL)
 ```
 
-## Next actions in order
+## Next actions in order (settled 2026-09-14)
 
-1. Override layer is implemented (`src/accent.rs`, `--accent` on the CLI,
-   `eval_cer` and `accent_report`). Extend the table as more forms are
-   confirmed by the listener.
-2. Verify `tdmelodic_openjtalk`'s licence and whether jpreprocess can load
-   an externally built dictionary (`jpreprocess-dictionary`'s build tools).
-3. If that path works: generate the standard-accent dictionary in a setup
-   script (documented as a Python requirement), keep it out of the repo,
-   and compare its output against the current frontend with the accent
-   report plus listening.
-4. Build the L3 accent gold from koniwa + our own annotations and gate it
-   in CI, with the "at most one nucleus per accentual phrase" invariant as
-   a separate test.
+The order below follows from what each step de-risks. The tdmelodic route
+is the highest-ceiling answer but its quality on **numeral compounds** is
+unproven (UniDic stores accents per word while numerals are compositional),
+and its setup is a one-time Docker/Python + UniDic cost. So we test it
+empirically before committing to rules that might duplicate it.
+
+1. **Build the verification base** (cheap, unblocks judgement):
+   - keep the listener-confirmed forms in `tests/evaluation/annotations/ja_accent.jsonl` (2 gated today)
+   - check koniwa's annotation schema and, if it carries accent, extract L3 gold from it (annotations are CC0)
+   - add the "at most one nucleus per accentual phrase" invariant as a test
+2. **Test tdmelodic empirically** (the decisive question):
+   - stand up the tool (Docker or Python + UniDic download), generate a dictionary
+   - run it on exactly our problem cases — 1,200 / 二千二百円 / 千五百 / 先週と比べると — and compare with the listener's forms and the gold set
+   - check whether jpreprocess can load an externally built dictionary; if not, feed the generated data through our own `AccentTable`/a table provider
+   - write the OpenJTalk-format conversion ourselves (tdmelodic_openjtalk is off-limits)
+3. **Implement the winner**:
+   - if tdmelodic fixes the cases → the standard-accent layer becomes the default, with the override table kept for speaker preference
+   - if it does not → implement the numeral rules (nucleus loss in -sen + number, then the 円 variant), each validated against the gold set and by listening
+4. **Extend the override table opportunistically** — it is the only mechanism
+   that captures a *speaker's* choice, so it stays regardless of 2/3.
