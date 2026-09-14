@@ -253,3 +253,48 @@ Next: pick the direction by ear. If the mid-sentence `HH` variant is wanted,
 the next implementation is phrase-level (suppress the initial rise when the
 千 phrase does not start the utterance), which our deviation layer can also
 express once we know how to set the chain flag / phrase grouping.
+
+## First shipped deviation: polite prefixes お / ご (2026-09-14)
+
+The listener could not judge the numeral candidates because ご注文は itself
+sounded wrong. Measured and traced:
+
+- ours and the reference agree again: pyopenjtalk's labels for ご注文は are
+  `A:-1+1+6` and `F:6_2#0_xx@1_1|1_6`, i.e. a1=-1, a2=1, a3=6, f1=6, f2=2 —
+  **identical to ours**. The prefix ご gets acc=2 ("accent after the
+  prefix"), which puts a nucleus at mora 2 of the phrase, so the realisation
+  is ゴL チュH ウL モL ンL ワL: a fall right after チュ.
+- The dictionaries disagree with that: NAIST-jdic has 注文 = チュウモン
+  **0/4** (heiban, chain C2), and the standard references agree — 注文 is
+  [0] heiban, and the literature records that the polite prefixes お / ご
+  normally leave the base word's accent untouched (お勉強 stays heiban).
+  So the listener's expectation, ゴL + チュウモンハ all high, is the norm and
+  OpenJTalk is the outlier here.
+
+Implemented as the deviation layer's **rule 1** (renumbered; the numeral
+rule was removed, see above): a 接頭詞 お/ご followed by a heiban node has
+its accent set to 0. Measured effect:
+
+| input | baseline (reference) | with the deviation |
+|---|---|---|
+| ご注文は | `LHLLLL` (ゴL チュH ウL モL ンL ワL) | **`LHHHHH`** (ゴL チュH ウH モH ンH ワH) |
+| ご注文 | `LHLLL` | **`LHHHH`** |
+| お名前 | `LHLL` | **`LHHH`** |
+| お勉強 | `LHLLL` | **`LHHHH`** |
+| ご連絡 | `LHLLL` | **`LHHHH`** |
+
+The class fixed here (お/ご + heiban noun) is far more common than the
+numeral cases, so this is the higher-value deviation. Known limitation: the
+literature notes rare exceptions where お/ご *do* change the base accent
+(ご指導 is cited); our rule forces heiban there as well, and such a word can
+be corrected with the override table.
+
+Listening candidates for the same sentence, 48 kHz / -20 LUFS:
+
+| file | configuration | ご注文は / 1,200円 tones |
+|---|---|---|
+| gift-fix-a.wav | baseline | `LHLLLL` / `HLLHH` |
+| gift-fix-b.wav | deviations + override table | `LHHHHH` / `LLLHH` |
+
+Gates: with the product configuration (deviations + the override table) the
+accent report reports **2 annotated, 0 mismatches**.

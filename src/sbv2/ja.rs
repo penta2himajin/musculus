@@ -238,37 +238,46 @@ fn distribute_phone(n_phone: i32, n_word: i32) -> Vec<i32> {
 impl JaProcess {
     /// Apply musculus's deliberate deviations from the reference frontend.
     ///
-    /// The frontend (jpreprocess) matches OpenJTalk exactly, and OpenJTalk's
-    /// numeral accent assignment differs from the standard/announcer norm
-    /// this project targets (docs/benchmarks/accent/ja-report.md and
-    /// docs/accent-resources.md). A node is a comma-separated NJD line:
-    /// field 0 surface, 1..4 POS, 8 reading, 9 pronunciation,
-    /// 10 accent/mora, 11 chain rule. Deviations rewrite field 10 before
-    /// the labels are generated — the same level the reference works at.
+    /// The frontend (jpreprocess) matches OpenJTalk exactly, and OpenJTalk
+    /// differs from the standard/announcer norm this project targets
+    /// (docs/benchmarks/accent/ja-report.md, docs/accent-resources.md). A
+    /// node is a comma-separated NJD line: field 0 surface, 1..4 POS,
+    /// 8 reading, 9 pronunciation, 10 accent/mora, 11 chain rule.
+    /// Deviations rewrite field 10 before the labels are generated — the
+    /// same level the reference works at.
     ///
-    /// Rule 1: a 千 followed by another numeral loses its own nucleus and
-    /// takes the accent of its final mora (accent = mora count, the "odaka"
-    /// side). This is what the dictionary's own chain rule C3 computes
-    /// ("accent = mora_size") and it makes both morae of セン high — the
-    /// flat plateau the listener described for 千二百, in contrast with the
-    /// reference's accented セ＼ン. Measured mapping: accent 1 -> HL,
-    /// accent 0 -> LH, accent = mora count -> HH.
+    /// Rule 1 (polite prefixes お / ご before a heiban noun): the prefix
+    /// must not introduce an accent nucleus. The reference gives it acc=2
+    /// ("accent after the prefix"), which lands a nucleus inside the base
+    /// word — measured as ゴL チュH ウL モL ンL ワL for ご注文は, i.e. a fall
+    /// after チュ. The dictionaries have 注文 = 0/4 (heiban) and the
+    /// literature records that お/ご normally leave the base word's accent
+    /// untouched; setting the prefix to 0 gives the heiban realisation
+    /// ゴL チュH ウH モH ンH ワH, which the listener confirmed.
+    ///
+    /// A numeral rule was tried first and removed: neither accent 0 nor
+    /// "accent = mora count" reaches the flat セン the listener wants
+    /// (that needs phrase-level control), so it stays unimplemented.
     pub fn apply_accent_deviations(&mut self) -> Result<(), JaError> {
-        let is_numeral =
-            |fields: &[&str]| fields.get(1) == Some(&"名詞") && fields.get(2) == Some(&"数");
-        let mut indices: Vec<usize> = Vec::new();
+        let mut prefix_fix: Vec<usize> = Vec::new();
         for i in 0..self.parsed.len().saturating_sub(1) {
             let head: Vec<&str> = self.parsed[i].split(',').collect();
             let next: Vec<&str> = self.parsed[i + 1].split(',').collect();
-            if is_numeral(&head) && is_numeral(&next) && head.get(8) == Some(&"セン") {
-                indices.push(i);
+            let is_polite_prefix =
+                head.get(1) == Some(&"接頭詞") && matches!(head.get(8), Some(&"ゴ") | Some(&"オ"));
+            let next_is_heiban = next
+                .get(10)
+                .and_then(|accent| accent.split('/').next())
+                .is_some_and(|position| position == "0");
+            if is_polite_prefix && next_is_heiban {
+                prefix_fix.push(i);
             }
         }
-        for i in indices {
+        for i in prefix_fix {
             let mut fields: Vec<String> = self.parsed[i].split(',').map(str::to_string).collect();
             if let Some(accent) = fields.get_mut(10) {
-                let morae = accent.split('/').nth(1).unwrap_or("2").to_string();
-                *accent = format!("{morae}/{morae}");
+                let morae = accent.split('/').nth(1).unwrap_or("1").to_string();
+                *accent = format!("0/{morae}");
                 self.parsed[i] = fields.join(",");
             }
         }
