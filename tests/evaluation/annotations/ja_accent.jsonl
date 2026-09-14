@@ -7,7 +7,7 @@
 {"input": "こんにちは", "note": "greeting"}
 {"input": "猫が座って動かない。", "note": "plain sentence"}
 {"input": "ありがとうございました", "note": "polite closing"}
-{"input": "先週と比べると", "note": "listener: 現行は「先週↑と→比べ↓ると」で不自然。期待として「先週と比べると(HHHMLMMMMM)」というメモあり — M(中程度)は現行の H/L 2 値素性では表現できない。expected_tones を書く際は H/L に丸めた形で"}
+{"input": "先週と比べると", "note": "listener: 候補 2/5 か 3/6(比べると 連続H + 文末トL)が良い、特に 3/6 が好み。暫定で 3(セL)を採用し、6(セH)は選択待ち — セの高さだけ差し替えれば切替可能", "expected_tones": "LHHHHHHHHL"}
 {"input": "二千二百", "note": "文献の予測: 二千=/ni-séN/(セに核) + 二百=/ni-hjakɯ́/(クに核) が分離可能な小句として結合 → ニセ＼ン | ニヒャ＼ク。listener の確認待ち"}
 {"input": "千二百", "note": "文献: -sen 以上の数詞+数詞は分離可能な小句。前部(セン)が核を失う変種も明記 → listener の HHLHH/LLLHH と整合"}
 {"input": "千五百", "note": "文献の例: /séN ɡo-hjakɯ ~ séN | ɡo-hjakɯ́/(一息 or 小句 2 つ)"}

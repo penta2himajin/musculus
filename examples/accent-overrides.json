@@ -1,4 +1,14 @@
 [
-  {"kana": "センニヒャク", "tones": "LLLHH"},
-  {"kana": "ニセンニヒャクエン", "tones": "HHLLHHHL"}
+  {
+    "kana": "センニヒャク",
+    "tones": "LLLHH"
+  },
+  {
+    "kana": "ニセンニヒャクエン",
+    "tones": "HHLLHHHL"
+  },
+  {
+    "kana": "クラベルト",
+    "tones": "HHHHL"
+  }
 ]
