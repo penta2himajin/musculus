@@ -7,3 +7,4 @@
 {"input": "こんにちは", "note": "greeting"}
 {"input": "猫が座って動かない。", "note": "plain sentence"}
 {"input": "ありがとうございました", "note": "polite closing"}
+{"input": "先週と比べると", "note": "listener: 現行は「先週↑と→比べ↓ると」で不自然。期待として「先週と比べると(HHHMLMMMMM)」というメモあり — M(中程度)は現行の H/L 2 値素性では表現できない。expected_tones を書く際は H/L に丸めた形で"}

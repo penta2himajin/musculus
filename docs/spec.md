@@ -151,6 +151,6 @@ SBV2JE ベースラインが動いた後に、比較アダプタとして実装�
 - ストリーミング合成(M4 以降)
 - **文分割 + 文間無音(2026-09-14 実装・検証済み)**:`src/segmenter.rs` + CLI `--split-sentences` / `--sentence-silence`(opt-in)。盲検 A/B は split 3 勝 2 敗・平均 CMOS ±0.00 で、**「常に分割」は採用しない**(長文では息切れが減るが、短文では流れを壊し、脱音・過大な文末下降も出た)。**既定は 1 パス**。次の候補は長さを考慮したグルーピング(短文を連結し長文のみ分割)
 - **L3 アクセント計測(2026-09-14 実装、欠陥検出済み)**:`ja::kana_tone` + `examples/accent_report.rs` + `tests/evaluation/annotations/ja_accent.jsonl`。`1,200` の期待形(`HHLHH`/`LLLHH`、センの同一トーン)に対し現行は `HLLHH` で **NG**。原因候補=特殊拍のトーン継承規則の欠如。次の一手は ja-report.md 参照
-- **長さを考慮したグルーピング(2026-09-14 実装)**:`segmenter::group_sentences` + CLI `--max-chars`。盲検 A/B(`ab-test-sbv2-group/`、signal 3 + 対照 2)の採点待ち
+- **長さを考慮したグルーピング(2026-09-14 実装・検証済み)**:`segmenter::group_sentences` + CLI `--max-chars`。盲検 A/B は signal 3 ペアで **1 勝 2 分 0 敗**(最長文で +2)、対照 2 ペアが ±1 = **雑音レベル約 1 CMOS**。既定は 1 パスのまま、長文向け推奨オプションとして文書化。既定切り替えは長文特化の追試で再現を確認してから
 - ~~文境界ハンドオフ~~ → **不成立と確定(2026-09-14、ADR-0005 追記2)**:低ステップ(5 steps)は盲検で 40 steps に 5/5 で負け(平均 CMOS −2.80)ため高速モードとして使えず、品質(40 steps)は backlog が ~4.16×音声長/文で増えるため引き継ぎが追いつかない。高速な品質エンジンが必要になった場合の候補はサンプラ変更・fp16・v4.1-Small
 - crates.io 公開時の README 英語化(ライセンスは決定済み: MIT OR Apache-2.0、euhadra と同型)
