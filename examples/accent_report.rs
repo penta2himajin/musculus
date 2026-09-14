@@ -69,6 +69,13 @@ fn main() -> Result<(), String> {
         let pairs = accent_view(&frontend, &item.input)?;
         let kana: String = pairs.iter().map(|(m, _)| m.as_str()).collect();
         let tones = ja::tone_string(&pairs);
+        // Aligned view: which mora carries which tone (needed to annotate
+        // precisely, e.g. セH ンL where セン should share one tone).
+        let aligned: String = pairs
+            .iter()
+            .map(|(m, t)| format!("{m}{}", if *t == 0 { 'L' } else { 'H' }))
+            .collect::<Vec<_>>()
+            .join(" ");
         match &item.expected_tones {
             None => {
                 println!(
@@ -83,10 +90,11 @@ fn main() -> Result<(), String> {
                     mismatches += 1;
                 }
                 println!(
-                    "[{}] {:>10} | カナ {:24} | tones {tones} | expected {expected}",
+                    "[{}] {:>10} | カナ {:24} | tones {tones} | expected {expected}\n         {:>10}   {aligned}",
                     if ok { "ok" } else { "NG" },
                     item.input,
-                    kana
+                    kana,
+                    ""
                 );
             }
         }

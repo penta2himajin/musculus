@@ -58,9 +58,14 @@ struct SynthArgs {
     /// hypothesis under test (docs/benchmarks/listening-log.md).
     #[arg(long)]
     split_sentences: bool,
-    /// Silence inserted between sentences when --split-sentences is set.
+    /// Silence inserted between segments when --split-sentences is set.
     #[arg(long, default_value_t = 0.4)]
     sentence_silence: f32,
+    /// Maximum characters per segment when --split-sentences is set:
+    /// short sentences are grouped together up to this budget and long
+    /// ones are cut. 0 = one segment per sentence.
+    #[arg(long, default_value_t = 0)]
+    max_chars: usize,
     /// User term dictionary (JSON array of {term, aliases}); applied
     /// before whichever engine runs. The dictionary is yours — musculus
     /// bundles none (docs/model-licenses.md).
@@ -201,7 +206,7 @@ fn run_synth(args: SynthArgs) -> Result<(), String> {
 
     // One segment per sentence when asked, otherwise the whole text.
     let pieces = if args.split_sentences {
-        musculus::segmenter::split_sentences(&text)
+        musculus::segmenter::group_sentences(&text, args.max_chars)
     } else {
         vec![text]
     };

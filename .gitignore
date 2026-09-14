@@ -33,3 +33,4 @@
 /.coreml-cache/
 /ab-test-steps/key.ndjson
 /ab-test-sbv2-split/key.ndjson
+/ab-test-sbv2-group/key.ndjson

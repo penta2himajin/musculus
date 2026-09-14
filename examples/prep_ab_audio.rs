@@ -51,9 +51,10 @@ fn main() -> Result<(), String> {
         let lufs = musculus::irodori::integrated_loudness(&samples, args.rate);
         let peak = samples.iter().fold(0.0f32, |m, &v| m.max(v.abs()));
         println!(
-            "lufs={} peak={:.4}",
+            "lufs={} peak={:.4} seconds={:.3}",
             lufs.map_or("nan".to_string(), |v| format!("{v:.2}")),
-            peak
+            peak,
+            samples.len() as f64 / args.rate as f64
         );
         return Ok(());
     }

@@ -61,6 +61,42 @@ pub fn split_sentences(text: &str) -> Vec<String> {
     out
 }
 
+/// Group sentences so that each group is at most `max_chars` characters
+/// (measured in codepoints), always keeping at least one sentence per
+/// group.
+///
+/// This is the middle ground the split A/B asked for
+/// (ab-test-sbv2-split/score-sheet.md): synthesizing everything in one
+/// pass makes long text sound breathless, while splitting every sentence
+/// breaks the flow across short ones. Grouping keeps short sentences
+/// together and cuts only when a group has grown long. `max_chars == 0`
+/// returns one group per sentence (the old split behaviour).
+pub fn group_sentences(text: &str, max_chars: usize) -> Vec<String> {
+    let sentences = split_sentences(text);
+    if max_chars == 0 {
+        return sentences;
+    }
+    let mut groups: Vec<String> = Vec::new();
+    let mut current = String::new();
+    for sentence in sentences {
+        if current.is_empty() {
+            current = sentence;
+            continue;
+        }
+        let would_be = current.chars().count() + sentence.chars().count();
+        if would_be <= max_chars {
+            current.push_str(&sentence);
+        } else {
+            groups.push(std::mem::take(&mut current));
+            current = sentence;
+        }
+    }
+    if !current.is_empty() {
+        groups.push(current);
+    }
+    groups
+}
+
 /// Concatenate chunks, inserting `silence_secs` of silence between
 /// them. The sample rate comes from the first chunk; chunks are expected
 /// to share it (one engine decodes at one rate).
@@ -113,6 +149,38 @@ mod tests {
     fn a_single_sentence_stays_one_segment() {
         assert_eq!(split_sentences("こんにちは"), vec!["こんにちは"]);
         assert!(split_sentences("   \n  ").is_empty());
+    }
+
+    #[test]
+    fn grouping_keeps_short_sentences_together() {
+        // 8 + 13 = 21 codepoints, under the limit -> one group.
+        let groups = group_sentences("こんにちは。今日はとても良い天気ですね。", 60);
+        assert_eq!(groups.len(), 1);
+        assert_eq!(groups[0], "こんにちは。今日はとても良い天気ですね。");
+    }
+
+    #[test]
+    fn grouping_cuts_when_a_group_grows_long() {
+        // The same text is 19 + 39 = 58 codepoints: a 40-character budget
+        // cuts it in two, a 60-character budget keeps it as one group.
+        let text = "その森には、古い言い伝えがありました。月が最も高く昇る夜、静かに耳を澄ませば、風の歌声が聞こえるというのです。";
+        let cut = group_sentences(text, 40);
+        assert_eq!(cut.len(), 2);
+        assert!(cut[0].ends_with('。') && cut[1].ends_with('。'));
+        let kept = group_sentences(text, 60);
+        assert_eq!(kept.len(), 1);
+    }
+
+    #[test]
+    fn grouping_zero_is_one_group_per_sentence() {
+        let text = "あ。い。う。";
+        assert_eq!(group_sentences(text, 0).len(), 3);
+    }
+
+    #[test]
+    fn a_single_long_sentence_still_yields_one_group() {
+        let long = "あ".repeat(500) + "。";
+        assert_eq!(group_sentences(&long, 60).len(), 1);
     }
 
     #[test]

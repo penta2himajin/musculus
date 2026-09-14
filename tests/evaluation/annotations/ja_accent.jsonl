@@ -1,4 +1,6 @@
-{"input": "1,200", "note": "listener caught せんに→ひゃく (flat) against the natural せんに↑ひゃく; expected_tones to be filled in by a native speaker"}
+{"input": "1,200", "expected_tones": "LLLHH", "note": "文頭(前置きなし)。センの2モーラは LL。listener の自然形は せんに↑ひゃく(ニ=L → ヒ=H)"}
+{"input": "ご注文は1,200円です", "note": "文中(前置きあり)。センの2モーラは HH になる(ユーザ観察)。全文の期待値は未記入"}
+{"input": "1,200円です", "note": "文頭の周辺文脈つき。センの2モーラは LL になるはず"}
 {"input": "1,200円", "note": "the sentence that exposed the accent error"}
 {"input": "2026年2月14日", "note": "date compound: check ねん/がつ pitch"}
 {"input": "午前10時", "note": "time"}
