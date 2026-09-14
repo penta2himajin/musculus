@@ -63,3 +63,19 @@ musculus は**重みを同梱しない**(AGENTS.md Prohibitions #1)。この文�
 - setup スクリプトは各リソースの**一次配布元 URL** と、取得時に表示すべき規約へのリンクをコメントに含める
 - CLI で初めて声を使う際、`--voice` のライセンス概要(クレジット要件)を表示する(M1 以降)
 - この一覧の更新は、採用モデルが変わる PR と同じ PR で行う(baseline JSON と同じ流儀)
+
+## 6. アクセント・韻律データの資源(2026-09-14 調査)
+
+ADR-0006 の判断根拠。**musculus はこれらを同梱せず、setup スクリプトで取得する前提**。
+
+| 資源 | ライセンス | 可否と用途 |
+|---|---|---|
+| [tdmelodic](https://github.com/PKSHATechnology-Research/tdmelodic)(日本語アクセント辞書生成) | **BSD-3-Clause** | ✅ 商用可。UniDic + NEologd からニューラル推定で大語彙アクセント辞書を生成([Tachibana & Katayama, ICASSP 2020](https://doi.org/10.1109/ICASSP40776.2020.9054081))。標準アクセント辞書層の本命 |
+| [tdmelodic_openjtalk](https://github.com/sarulab-speech/tdmelodic_openjtalk) | **未確認** | ⚠️ OpenJTalk 辞書化。jpreprocess と直結しうるため優先的に確認する |
+| [UniDic](https://clrd.ninjal.ac.jp/unidic/)(国語研短単位自動解析用辞書) | **GPLv2 / LGPLv2.1 / 修正BSD のトリプル**(現代書き言葉 Ver.2.x+、現代話し言葉 Ver.2.2.x+ 以降) | ✅ 商用可。アクセント情報付与は [KAKEN 19K13173](https://kaken.nii.ac.jp/ja/grant/KAKENHI-PROJECT-19K13173/)(クラウドソーシング) |
+| [UniDic非コアデータ](https://teru-oka-1933.github.io/unidic_non_core/) | **Apache-2.0**(2019.08 に MIT から変更) | ✅ 商用可。ただし確認した公開物はカタカナ略語・複合語分割リストで、**アクセントデータの所在は要確認** |
+| [koniwa(声庭)](https://github.com/koniwa/koniwa) | アノテーション **CC0**、プログラム **Apache-2.0**、音声 CC BY / PD | ✅ **韻律アノテーション付き音声**。L3 gold・検証コーパス |
+| [OJAD](https://www.gavo.t.u-tokyo.ac.jp/ojad/pages/notes)(オンライン日本語アクセント辞書) | **教育・学術研究目的に限定**。「営利活動を目的とした企業の研究開発での利用はお控えください」 | ❌ 製品では使用しない |
+| NHK日本語発音アクセント新辞典 | 著作物(放送文化研究所の研究記事は参照可) | ❌ データ同梱不可。**公開された“原則”のみ**規則設計の根拠として参照 |
+
+**運用**: 「標準アクセント」を目指す場合も、**NHK 辞書そのものは使わず**、(1) 文献の原則に基づく規則、(2) ユーザ所有の上書き表、(3) tdmelodic(BSD-3)で生成した辞書、の三層で到達する。
