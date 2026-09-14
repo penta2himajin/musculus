@@ -312,3 +312,20 @@ default is the product configuration. With the override table the gate is
 The 1,200円 `LLLHH` form carried by the override table was part of that same
 approved file, so it stands for this sentence; the phrase-level `HH` variant
 remains an unimplemented, lower-priority option.
+
+## Regression gate is in place (2026-09-14)
+
+`tests/l3_accent.rs` holds both lines described above:
+
+- the baseline matches `tests/evaluation/annotations/ja_accent_reference.jsonl`,
+  generated from pyopenjtalk by `scripts/gen_accent_reference.py` (the
+  oracle's version is recorded in the fixture's `_meta` line). Current
+  result: **18/18 items match**.
+- items with `expected_tones` in `ja_accent.jsonl` must produce exactly
+  those tones under the shipped configuration (deviations + the sample
+  override table); items without one must be untouched by the deviation
+  layer. Current: 8 intended deviations, 0 containment violations.
+
+Adding a deviation therefore means declaring it in the annotations with a
+reason — otherwise the gate fails. That is the mechanism that keeps
+"intended" and "accidental" apart.

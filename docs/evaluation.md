@@ -141,3 +141,20 @@ CER = (置換 + 削除 + 挿入) / 正解文字数(Levenshtein 距離)。ja は�
 - 評価データはスクリプトで都度取得。ライセンスが OSS 配布物と衝突するデータは commit しない(CIEMPIESS 教訓の ja 側 mirror: ja gold セットは自作するため原則問題なし、素材コーパスのライセンスのみ注意)
 - ja 文章の参照セットは M2 で FLEURS ja / Common Voice ja(CC-BY 4.0 / CC0)から選定し、この文書に追記する
 - 合成音声の評価用 WAV はリポジトリに commit しない(体積管理。ハッシュとメタデータのみ記録)
+
+## 4. L3 アクセントゲート(2026-09-14 実装)
+
+アクセント層は相反する 2 つの責務を持つ: **参照実装への忠実さ**と、**規範と食い違う箇所での意図的な逸脱**(docs/accent-resources.md)。`tests/l3_accent.rs` が両方の線を守る。
+
+### 3 つの検査
+
+1. **忠実性** — 逸脱を切ったベースラインの NJD ノード(発音・アクセント型・モーラ数)が、**参照オラクル pyopenjtalk から生成したフィクスチャ** `tests/evaluation/annotations/ja_accent_reference.jsonl` と一致すること。jpreprocess 更新や我々の変更による**意図しないズレ**を検出する
+2. **意図的逸脱** — `ja_accent.jsonl` に `expected_tones` を持つ項目は、**出荷構成(逸脱 + サンプル上書き表)でちょうどその tones を出す**こと
+3. **封じ込め(containment)** — `expected_tones` を持たない項目は、**逸脱層の有無で tones が変わらない**こと。逸脱が意図しない語に漏れていないことを保証する
+
+### 運用
+
+- フィクスチャの再生成: `python3 -m venv .venv && .venv/bin/pip install pyopenjtalk && .venv/bin/python scripts/gen_accent_reference.py`(オラクルのバージョンはフィクスチャの `_meta` 行に記録される)
+- 新しい逸脱を入れるときは、**対象項目に `expected_tones` と理由を書く**。書かなければゲートが containment 違反として止める(これが「意図」と「事故」の区別)
+- 現在: 参照一致 18/18、意図的逸脱 8 項目、`annotated: 8, mismatches: 0`
+- **チェーン規則の列は比較しない**: オラクルは一部のノードで規則ではなく chain flag を返すため。比較するアクセント型・モーラ数は、その機構の出力そのもの

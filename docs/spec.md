@@ -150,6 +150,7 @@ SBV2JE ベースラインが動いた後に、比較アダプタとして実装�
 - `SpeechSegment` のスタイル/キャプション表現(実装が示すまで凍結)
 - ストリーミング合成(M4 以降)
 - **文分割 + 文間無音(2026-09-14 実装・検証済み)**:`src/segmenter.rs` + CLI `--split-sentences` / `--sentence-silence`(opt-in)。盲検 A/B は split 3 勝 2 敗・平均 CMOS ±0.00 で、**「常に分割」は採用しない**(長文では息切れが減るが、短文では流れを壊し、脱音・過大な文末下降も出た)。**既定は 1 パス**。次の候補は長さを考慮したグルーピング(短文を連結し長文のみ分割)
+- **L3 アクセント回帰ゲート(2026-09-14 実装)**:`tests/l3_accent.rs` — 参照オラクル(pyopenjtalk)フィクスチャとの忠実性 18/18、意図的逸脱 8 項目、containment 違反 0。逸脱は `expected_tones` で宣言しないとゲートが止める
 - **アクセント逸脱層(2026-09-14 実装 → 耳検証済みで既定 ON)**:`JaProcess::apply_accent_deviations`(NJD ノードのアクセント欄を書き換え)+ CLI/`eval_cer` の `--accent-deviations`、`accent_report --deviations`。**規則1=丁寧接頭辞 お/ご + 平板名詞**(参照は acc=2 を付けてチュ後に下降するが、辞書は注文=0/4、規範も接頭辞は結合相手のアクセントを変えない → ゴL+全て高に修正。ご注文・お名前・お勉強・ご連絡で確認)。数詞規則は「平板 HH/LL に届かない」ため削除(句レベル制御が次の課題)
 - **アクセント上書き層(2026-09-14 実装)**:`src/accent.rs`(`AccentTable`、最長一致、モーラ数と H/L の検証)+ CLI/`eval_cer`/`accent_report` の `--accent`。`examples/accent-overrides.json` に listener 確認済みの 2 形(1,200 → LLLHH、二千二百円 → HHLLHHHL)を収録し、レポートで **annotated 2 / mismatches 0**
 - **アクセント資源の記録(2026-09-14)**:[docs/accent-resources.md](accent-resources.md) — 使える資源(tdmelodic BSD-3、UniDic、koniwa)と使えない資源(OJAD、NHK 辞書=参照用)を次回作業手順つきで記録
