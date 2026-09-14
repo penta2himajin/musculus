@@ -393,3 +393,23 @@ mean naturalness per variant and count top choices; record the outcome in
 docs/benchmarks/listening-log.md and, if it overrides the current choice,
 update `examples/accent-overrides.json` plus the `expected_tones` entry so
 the regression gate follows.
+
+### Blind round reversed the initial-mora choice (2026-09-14)
+
+With the blinded A–F set, the listener picked **C or F** — and both are the
+**high-initial (セH)** variants, the opposite of the explicitly chosen D
+(candidate 3, セL) from the previous round. This is the first time a blind
+comparison overturned an explicit choice, and it lines up with the
+literature on initial-lowering suppression and with the listener's own
+二千二百円 production (ニH).
+
+Registered: **F = セH + continuous high + final ト low**
+(`HHHHHHHHHL`), expressed compositionally in the override table
+(`センシュウト -> HHHHH`, `クラベルト -> HHHHL`) and declared as
+`expected_tones` so the regression gate follows. A product-rendered
+reference take is at `ab-test-accent/shinshuu-registered-F.wav` (48 kHz,
+-20 LUFS).
+
+Third-party sheets from the blinded set are still outstanding; when they
+arrive, tally mean naturalness and top choices per label and re-open the
+decision if the group disagrees.
