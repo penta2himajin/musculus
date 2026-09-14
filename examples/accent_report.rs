@@ -80,7 +80,10 @@ fn main() -> Result<(), String> {
             let process = frontend
                 .process_text(&normalized)
                 .map_err(|e| e.to_string())?;
-            println!("--- labels for {:?} (normalized: {normalized:?})", item.input);
+            println!(
+                "--- labels for {:?} (normalized: {normalized:?})",
+                item.input
+            );
             for line in process.label_dump().map_err(|e| e.to_string())? {
                 println!("      {line}");
             }
