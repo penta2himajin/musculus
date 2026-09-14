@@ -150,6 +150,8 @@ SBV2JE ベースラインが動いた後に、比較アダプタとして実装�
 - `SpeechSegment` のスタイル/キャプション表現(実装が示すまで凍結)
 - ストリーミング合成(M4 以降)
 - **文分割 + 文間無音(2026-09-14 実装・検証済み)**:`src/segmenter.rs` + CLI `--split-sentences` / `--sentence-silence`(opt-in)。盲検 A/B は split 3 勝 2 敗・平均 CMOS ±0.00 で、**「常に分割」は採用しない**(長文では息切れが減るが、短文では流れを壊し、脱音・過大な文末下降も出た)。**既定は 1 パス**。次の候補は長さを考慮したグルーピング(短文を連結し長文のみ分割)
+- **アクセント上書き層(2026-09-14 実装)**:`src/accent.rs`(`AccentTable`、最長一致、モーラ数と H/L の検証)+ CLI/`eval_cer`/`accent_report` の `--accent`。`examples/accent-overrides.json` に listener 確認済みの 2 形(1,200 → LLLHH、二千二百円 → HHLLHHHL)を収録し、レポートで **annotated 2 / mismatches 0**
+- **アクセント資源の記録(2026-09-14)**:[docs/accent-resources.md](accent-resources.md) — 使える資源(tdmelodic BSD-3、UniDic、koniwa)と使えない資源(OJAD、NHK 辞書=参照用)を次回作業手順つきで記録
 - **アクセントデータ戦略(ADR-0006、2026-09-14)**: 規則層 + ユーザ上書き層 + **tdmelodic(BSD-3)由来の標準アクセント辞書層** + 検証層(koniwa CC0)。OJAD は企業利用不可、NHK 辞書は著作物のため使わない
 - **L3 アクセント計測(2026-09-14 実装、欠陥検出済み)**:`ja::kana_tone` + `examples/accent_report.rs` + `tests/evaluation/annotations/ja_accent.jsonl`。`1,200` の期待形(`HHLHH`/`LLLHH`、センの同一トーン)に対し現行は `HLLHH` で **NG**。原因は**数詞複合語のアクセント推定**(千円は正しく セH ンL、千二百円では誤る)。研究調査と修正方針(A=アクセント上書き表 → B=数詞複合語規則 → C=ニューラル PPI)は ja-report.md 参照
 - **長さを考慮したグルーピング(2026-09-14 実装・検証済み)**:`segmenter::group_sentences` + CLI `--max-chars`。盲検 A/B は signal 3 ペアで **1 勝 2 分 0 敗**(最長文で +2)、対照 2 ペアが ±1 = **雑音レベル約 1 CMOS**。既定は 1 パスのまま、長文向け推奨オプションとして文書化。既定切り替えは長文特化の追試で再現を確認してから

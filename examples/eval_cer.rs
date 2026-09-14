@@ -41,6 +41,9 @@ struct Args {
     /// Reference voice WAV (irodori only).
     #[arg(long)]
     ref_wav: Option<PathBuf>,
+    /// User accent overrides (sbv2 only).
+    #[arg(long)]
+    accent: Option<PathBuf>,
     /// Rectified-flow Euler steps (irodori only; default 40).
     #[arg(long)]
     steps: Option<usize>,
@@ -191,6 +194,10 @@ fn main() -> Result<(), String> {
             voice: args.voice.clone(),
             style_id: 0,
             style_weight: 1.0,
+            accent: match &args.accent {
+                Some(path) => musculus::accent::AccentTable::from_file(path)?,
+                None => Default::default(),
+            },
         },
         "irodori" => f::Engine::Irodori {
             dir: args

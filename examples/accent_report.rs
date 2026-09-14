@@ -28,6 +28,11 @@ struct Args {
     /// positions) behind each item's tones.
     #[arg(long)]
     labels: bool,
+    /// Apply a user accent override table (JSON array of {kana, tones})
+    /// before printing, so the effect of an override is visible without
+    /// synthesizing.
+    #[arg(long)]
+    accent: Option<PathBuf>,
 }
 
 #[derive(Deserialize)]
@@ -42,8 +47,13 @@ struct AccentItem {
 }
 
 /// The mora + tone view of one input, through the production chain
-/// (JaNormalizer -> num2word -> normalize -> frontend -> g2p).
-fn accent_view(frontend: &JaFrontend, input: &str) -> Result<Vec<(String, i32)>, String> {
+/// (JaNormalizer -> num2word -> normalize -> frontend -> g2p), with the
+/// user's accent overrides applied when a table is given.
+fn accent_view(
+    frontend: &JaFrontend,
+    input: &str,
+    accent: &musculus::accent::AccentTable,
+) -> Result<Vec<(String, i32)>, String> {
     let normalized = musculus::sbv2::ja_norm::JaNormalizer::new()
         .normalize(input)
         .map_err(|e| e.to_string())?
@@ -54,6 +64,7 @@ fn accent_view(frontend: &JaFrontend, input: &str) -> Result<Vec<(String, i32)>,
         .process_text(&normalized)
         .map_err(|e| e.to_string())?;
     let (phones, tones, _word2ph) = process.g2p().map_err(|e| e.to_string())?;
+    let tones = accent.apply(&phones, &tones);
     ja::kana_tone(&phones, &tones).map_err(|e| e.to_string())
 }
 
@@ -61,6 +72,13 @@ fn main() -> Result<(), String> {
     let args = Args::parse();
     let content = std::fs::read_to_string(&args.annotations).map_err(|e| format!("read: {e}"))?;
     let frontend = JaFrontend::new().map_err(|e| format!("ja frontend: {e}"))?;
+    let accent = match &args.accent {
+        Some(path) => musculus::accent::AccentTable::from_file(path)?,
+        None => Default::default(),
+    };
+    if !accent.is_empty() {
+        println!("accent overrides: {} entr(y/ies) applied\n", accent.len());
+    }
 
     let mut mismatches = 0usize;
     let mut annotated = 0usize;
@@ -88,7 +106,7 @@ fn main() -> Result<(), String> {
                 println!("      {line}");
             }
         }
-        let pairs = accent_view(&frontend, &item.input)?;
+        let pairs = accent_view(&frontend, &item.input, &accent)?;
         let kana: String = pairs.iter().map(|(m, _)| m.as_str()).collect();
         let tones = ja::tone_string(&pairs);
         // Aligned view: which mora carries which tone (needed to annotate

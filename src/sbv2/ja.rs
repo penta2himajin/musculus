@@ -531,25 +531,79 @@ pub fn phones_to_kana(phones: &[String]) -> Result<String, JaError> {
 /// VITS2 decode receives (1 = high), one entry per mora. Used by the L3
 /// accent report, which exists because the phoneme-level gate cannot see
 /// a wrong pitch pattern (docs/evaluation.md §3.4).
-pub fn kana_tone(phones: &[String], tones: &[i32]) -> Result<Vec<(String, i32)>, JaError> {
+/// Small kana that attach to the preceding mora instead of forming one.
+const SMALL_KANA: [char; 9] = ['ャ', 'ュ', 'ョ', 'ァ', 'ィ', 'ゥ', 'ェ', 'ォ', 'ヮ'];
+
+/// Split katakana into morae: one character each, except small kana which
+/// join the preceding mora (ヒャ is one mora, ン・ッ・ー are their own).
+///
+/// Long vowels are **not** expanded here; the phone stream renders ー as a
+/// repeated vowel mora (コーヒー → コ オ ヒ イ), which is what an accent
+/// override is matched against.
+pub fn split_kana_morae(kana: &str) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for c in kana.chars() {
+        if SMALL_KANA.contains(&c) {
+            if let Some(last) = out.last_mut() {
+                last.push(c);
+                continue;
+            }
+        }
+        out.push(c.to_string());
+    }
+    out
+}
+
+/// Whether a phone is punctuation (it carries no tone and no mora).
+pub fn is_punctuation(phone: &str) -> bool {
+    PUNCTUATIONS.contains(&phone)
+}
+
+/// One mora's place in the phone stream: its kana, its tone, and the
+/// half-open phone index range it occupies (consonant + vowel). This is
+/// what lets an accent override write a tone back into the phone-level
+/// array the decode consumes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MoraSpan {
+    /// Katakana mora (punctuation appears as itself).
+    pub kana: String,
+    /// H/L feature (1 = high). Punctuation carries 0 and is skipped by
+    /// overrides.
+    pub tone: i32,
+    /// First phone index of the mora.
+    pub start: usize,
+    /// One past the last phone index of the mora.
+    pub end: usize,
+}
+
+/// Split a padded phone/tone stream into mora spans (pads dropped).
+pub fn kana_tone_spans(phones: &[String], tones: &[i32]) -> Result<Vec<MoraSpan>, JaError> {
     let end = phones.len().min(tones.len()).saturating_sub(1);
-    let mut results: Vec<(String, i32)> = Vec::new();
+    let mut spans: Vec<MoraSpan> = Vec::new();
     let mut current_mora = String::new();
+    let mut mora_start = 0usize;
     for i in 1..end {
         let phone = &phones[i];
-        let tone = tones[i];
+        let tone = tones[i].clamp(0, 1);
         if phone == "_" {
             continue;
         }
         if PUNCTUATIONS.contains(&phone.as_str()) {
-            results.push((phone.clone(), 0));
+            spans.push(MoraSpan {
+                kana: phone.clone(),
+                tone: 0,
+                start: i,
+                end: i + 1,
+            });
             continue;
         }
         if CONSONANTS.contains(phone) {
-            // The mora's tone comes from its vowel; the consonant/vowel
-            // pair shares one tone in this scheme.
             current_mora = phone.clone();
+            mora_start = i;
         } else {
+            if current_mora.is_empty() {
+                mora_start = i;
+            }
             current_mora.push_str(phone);
             let kana = MORA_PHONEMES_TO_MORA_KATA
                 .get(&current_mora)
@@ -557,11 +611,23 @@ pub fn kana_tone(phones: &[String], tones: &[i32]) -> Result<Vec<(String, i32)>,
                     JaError::ValueError(format!("phoneme pair is not a mora: {current_mora:?}"))
                 })?
                 .clone();
-            results.push((kana, tone.clamp(0, 1)));
+            spans.push(MoraSpan {
+                kana,
+                tone,
+                start: mora_start,
+                end: i + 1,
+            });
             current_mora.clear();
         }
     }
-    Ok(results)
+    Ok(spans)
+}
+
+pub fn kana_tone(phones: &[String], tones: &[i32]) -> Result<Vec<(String, i32)>, JaError> {
+    Ok(kana_tone_spans(phones, tones)?
+        .into_iter()
+        .map(|span| (span.kana, span.tone))
+        .collect())
 }
 
 /// Render `(mora, tone)` pairs as `(kana, "H/L")` for reports.

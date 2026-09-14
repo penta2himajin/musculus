@@ -11,6 +11,7 @@ pub mod normalize;
 pub mod symbols;
 pub mod synth;
 
+use crate::accent::AccentTable;
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::Mutex;
@@ -63,6 +64,8 @@ pub struct Sbv2Adapter {
     style_weight: f32,
     sdp_ratio: f32,
     length_scale: f32,
+    /// User-owned accent overrides (ADR-0006).
+    accent: AccentTable,
 }
 
 impl Sbv2Adapter {
@@ -134,12 +137,21 @@ impl Sbv2Adapter {
             style_weight: 1.0,
             sdp_ratio: 0.0,
             length_scale: 1.0,
+            accent: AccentTable::default(),
         })
     }
 
     /// Voice ids available in this adapter, sorted.
     pub fn voice_names(&self) -> Vec<String> {
         self.voices.keys().cloned().collect()
+    }
+
+    /// Builder: apply user-owned accent overrides to the H/L feature
+    /// before it is encoded (the frontend's accent estimation is
+    /// documented to miss numeral compounds; ADR-0006).
+    pub fn with_accent_table(mut self, accent: AccentTable) -> Self {
+        self.accent = accent;
+        self
     }
 
     /// Builder: decode with a specific style id.
@@ -250,6 +262,9 @@ impl Sbv2Adapter {
         let (phones, tones, mut word2ph) = process
             .g2p()
             .map_err(|e| TtsError::Inference(e.to_string()))?;
+        // User-owned accent overrides replace the frontend's H/L where
+        // they match, before anything is encoded.
+        let tones = self.accent.apply(&phones, &tones);
 
         let (phone_ids, tone_ids, lang_ids) = to_sequence(&phones, &tones)?;
         let phones = intersperse(&phone_ids, 0);

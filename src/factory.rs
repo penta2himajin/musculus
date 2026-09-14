@@ -17,6 +17,8 @@ pub enum Engine {
     Sbv2 {
         /// Directory holding `tokenizer.json`, `deberta.onnx`, `*.sbv2`.
         dir: PathBuf,
+        /// User-owned accent overrides (ADR-0006); empty = frontend only.
+        accent: crate::accent::AccentTable,
         /// Voice id (a `.sbv2` file stem); `None` = the first voice.
         voice: Option<String>,
         /// Style id within the voice's style table.
@@ -75,11 +77,13 @@ impl Engine {
                 dir,
                 style_id,
                 style_weight,
+                accent,
                 ..
             } => {
                 let adapter = crate::sbv2::Sbv2Adapter::load_dir(dir)?
                     .with_style_id(*style_id)
-                    .with_style_weight(*style_weight);
+                    .with_style_weight(*style_weight)
+                    .with_accent_table(accent.clone());
                 Ok(Box::new(adapter))
             }
             #[cfg(feature = "wav")]
@@ -138,6 +142,7 @@ mod tests {
             voice: Some("tsukuyomi".into()),
             style_id: 0,
             style_weight: 1.0,
+            accent: Default::default(),
         };
         assert_eq!(sbv2.name(), "sbv2");
         assert_eq!(sbv2.voice_hint().as_deref(), Some("tsukuyomi"));
@@ -162,6 +167,7 @@ mod tests {
             voice: None,
             style_id: 0,
             style_weight: 1.0,
+            accent: Default::default(),
         };
         assert!(matches!(engine.build(), Err(TtsError::ModelLoad(_))));
 

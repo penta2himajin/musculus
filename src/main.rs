@@ -66,6 +66,11 @@ struct SynthArgs {
     /// ones are cut. 0 = one segment per sentence.
     #[arg(long, default_value_t = 0)]
     max_chars: usize,
+    /// User accent overrides (JSON array of {kana, tones}); applied to
+    /// the sbv2 engine's H/L feature after g2p, before encoding. See
+    /// docs/decisions/0006-accent-data-strategy.md.
+    #[arg(long)]
+    accent: Option<PathBuf>,
     /// User term dictionary (JSON array of {term, aliases}); applied
     /// before whichever engine runs. The dictionary is yours — musculus
     /// bundles none (docs/model-licenses.md).
@@ -140,6 +145,10 @@ fn resolve_engine(args: &SynthArgs) -> Result<musculus::factory::Engine, String>
             if args.ref_wav.is_some() || args.steps.is_some() {
                 return Err("--ref-wav/--steps only apply to --engine irodori".into());
             }
+            let accent = match &args.accent {
+                Some(path) => musculus::accent::AccentTable::from_file(path)?,
+                None => Default::default(),
+            };
             Ok(f::Engine::Sbv2 {
                 dir: args
                     .dir
@@ -148,6 +157,7 @@ fn resolve_engine(args: &SynthArgs) -> Result<musculus::factory::Engine, String>
                 voice: args.voice.clone(),
                 style_id: args.style.unwrap_or(0),
                 style_weight: args.style_weight.unwrap_or(1.0),
+                accent,
             })
         }
         #[cfg(feature = "wav")]
@@ -157,6 +167,9 @@ fn resolve_engine(args: &SynthArgs) -> Result<musculus::factory::Engine, String>
                     "the irodori engine takes its voice from --ref-wav; --voice/--style/--style-weight are sbv2-only"
                         .into(),
                 );
+            }
+            if args.accent.is_some() {
+                return Err("--accent applies to the sbv2 engine (Irodori's prosody comes from its own text encoder)".into());
             }
             Ok(f::Engine::Irodori {
                 dir: args
