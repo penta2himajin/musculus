@@ -209,3 +209,47 @@ So koniwa is usable as (a) **reading/pronunciation gold with timings** and
 cannot by itself provide H/L accent gold. Accent gold therefore comes from
 the listener's annotations (already the case) and, later, from F0 analysis
 or an accent-labelled lexicon.
+
+## Deviations are opt-in: what the first rule taught us (2026-09-14)
+
+Implemented the deviation layer (`JaProcess::apply_accent_deviations`, called
+by the adapter only when enabled; CLI/`eval_cer` flag `--accent-deviations`;
+`accent_report --deviations`). It rewrites field 10 (accent/mora) of the NJD
+node strings before the labels are generated, i.e. the same level the
+reference works at.
+
+Rule 1 (a 千 followed by another numeral) was tried with two encodings and
+measured:
+
+| encoding | 千二百 tones | reading |
+|---|---|---|
+| reference (no deviation) | `HLLHH` | セH ンL (the form the listener rejects) |
+| accent = 0 (heiban) | `LHLHH` | セL ンH |
+| accent = mora count (odaka, what C3 computes) | `LHLHH` | セL ンH |
+
+**Measured mapping** for a phrase-initial 2-mora word: accent 1 -> HL,
+accent 0 -> LH, accent = mora count -> LH. Heiban and odaka are
+indistinguishable in the H/L feature because the difference between them
+falls *after* the word, on the following particle. The listener's target for
+セン is a **plateau** (HH or LL), which neither encoding produces: the
+phrase-initial rise is inserted by the prosody markers, so reaching HH/LL
+needs **phrase-level control** (suppressing the initial rise or merging the
+phrases), not a word-accent change.
+
+Therefore rule 1 stays **experimental and off by default**, and the
+listener's confirmed form is carried by the override table (which sets the
+tones directly and does produce `LLLHH`).
+
+Three candidates for the same sentence were rendered for an ear decision
+(48 kHz, -20 LUFS, `accent-cand-{a,b,c}.wav`):
+
+| file | path | 1,200円 tones |
+|---|---|---|
+| a | reference | `HLLHH` |
+| b | deviation (odaka) | `LHLHH` |
+| c | override table | `LLLHH` |
+
+Next: pick the direction by ear. If the mid-sentence `HH` variant is wanted,
+the next implementation is phrase-level (suppress the initial rise when the
+千 phrase does not start the utterance), which our deviation layer can also
+express once we know how to set the chain flag / phrase grouping.

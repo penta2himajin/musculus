@@ -66,6 +66,8 @@ pub struct Sbv2Adapter {
     length_scale: f32,
     /// User-owned accent overrides (ADR-0006).
     accent: AccentTable,
+    /// Apply musculus's deliberate accent deviations (opt-in).
+    accent_deviations: bool,
 }
 
 impl Sbv2Adapter {
@@ -138,12 +140,21 @@ impl Sbv2Adapter {
             sdp_ratio: 0.0,
             length_scale: 1.0,
             accent: AccentTable::default(),
+            accent_deviations: false,
         })
     }
 
     /// Voice ids available in this adapter, sorted.
     pub fn voice_names(&self) -> Vec<String> {
         self.voices.keys().cloned().collect()
+    }
+
+    /// Builder: enable musculus's deliberate accent deviations from the
+    /// reference frontend (docs/accent-resources.md). Off by default while
+    /// the encodings are validated by ear.
+    pub fn with_accent_deviations(mut self, enabled: bool) -> Self {
+        self.accent_deviations = enabled;
+        self
     }
 
     /// Builder: apply user-owned accent overrides to the H/L feature
@@ -255,10 +266,18 @@ impl Sbv2Adapter {
             .num2word(&normalized)
             .map_err(|e| TtsError::Inference(e.to_string()))?;
         let normalized = normalize::normalize_text(&read);
-        let process = self
+        let mut process = self
             .frontend
             .process_text(&normalized)
             .map_err(|e| TtsError::Inference(e.to_string()))?;
+        // musculus's deliberate accent deviations, on top of the faithful
+        // reference frontend — opt-in while the encodings are still being
+        // validated by ear (docs/accent-resources.md).
+        if self.accent_deviations {
+            process
+                .apply_accent_deviations()
+                .map_err(|e| TtsError::Inference(e.to_string()))?;
+        }
         let (phones, tones, mut word2ph) = process
             .g2p()
             .map_err(|e| TtsError::Inference(e.to_string()))?;

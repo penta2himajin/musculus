@@ -236,6 +236,45 @@ fn distribute_phone(n_phone: i32, n_word: i32) -> Vec<i32> {
 }
 
 impl JaProcess {
+    /// Apply musculus's deliberate deviations from the reference frontend.
+    ///
+    /// The frontend (jpreprocess) matches OpenJTalk exactly, and OpenJTalk's
+    /// numeral accent assignment differs from the standard/announcer norm
+    /// this project targets (docs/benchmarks/accent/ja-report.md and
+    /// docs/accent-resources.md). A node is a comma-separated NJD line:
+    /// field 0 surface, 1..4 POS, 8 reading, 9 pronunciation,
+    /// 10 accent/mora, 11 chain rule. Deviations rewrite field 10 before
+    /// the labels are generated — the same level the reference works at.
+    ///
+    /// Rule 1: a 千 followed by another numeral loses its own nucleus and
+    /// takes the accent of its final mora (accent = mora count, the "odaka"
+    /// side). This is what the dictionary's own chain rule C3 computes
+    /// ("accent = mora_size") and it makes both morae of セン high — the
+    /// flat plateau the listener described for 千二百, in contrast with the
+    /// reference's accented セ＼ン. Measured mapping: accent 1 -> HL,
+    /// accent 0 -> LH, accent = mora count -> HH.
+    pub fn apply_accent_deviations(&mut self) -> Result<(), JaError> {
+        let is_numeral =
+            |fields: &[&str]| fields.get(1) == Some(&"名詞") && fields.get(2) == Some(&"数");
+        let mut indices: Vec<usize> = Vec::new();
+        for i in 0..self.parsed.len().saturating_sub(1) {
+            let head: Vec<&str> = self.parsed[i].split(',').collect();
+            let next: Vec<&str> = self.parsed[i + 1].split(',').collect();
+            if is_numeral(&head) && is_numeral(&next) && head.get(8) == Some(&"セン") {
+                indices.push(i);
+            }
+        }
+        for i in indices {
+            let mut fields: Vec<String> = self.parsed[i].split(',').map(str::to_string).collect();
+            if let Some(accent) = fields.get_mut(10) {
+                let morae = accent.split('/').nth(1).unwrap_or("2").to_string();
+                *accent = format!("{morae}/{morae}");
+                self.parsed[i] = fields.join(",");
+            }
+        }
+        Ok(())
+    }
+
     /// NJD nodes → (surface text units, katakana readings).
     ///
     /// Node fields arrive as comma-joined strings: field 0 is the

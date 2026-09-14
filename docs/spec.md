@@ -150,6 +150,7 @@ SBV2JE ベースラインが動いた後に、比較アダプタとして実装�
 - `SpeechSegment` のスタイル/キャプション表現(実装が示すまで凍結)
 - ストリーミング合成(M4 以降)
 - **文分割 + 文間無音(2026-09-14 実装・検証済み)**:`src/segmenter.rs` + CLI `--split-sentences` / `--sentence-silence`(opt-in)。盲検 A/B は split 3 勝 2 敗・平均 CMOS ±0.00 で、**「常に分割」は採用しない**(長文では息切れが減るが、短文では流れを壊し、脱音・過大な文末下降も出た)。**既定は 1 パス**。次の候補は長さを考慮したグルーピング(短文を連結し長文のみ分割)
+- **アクセント逸脱層(2026-09-14 実装、実験的・既定 off)**:`JaProcess::apply_accent_deviations`(NJD ノードのアクセント欄を書き換え)+ CLI/`eval_cer` の `--accent-deviations`、`accent_report --deviations`。第1規則(千+数詞)は「セL ンH」となり**目標の平板(HH/LL)に届かない**ため opt-in のまま。句レベルの制御が次の課題
 - **アクセント上書き層(2026-09-14 実装)**:`src/accent.rs`(`AccentTable`、最長一致、モーラ数と H/L の検証)+ CLI/`eval_cer`/`accent_report` の `--accent`。`examples/accent-overrides.json` に listener 確認済みの 2 形(1,200 → LLLHH、二千二百円 → HHLLHHHL)を収録し、レポートで **annotated 2 / mismatches 0**
 - **アクセント資源の記録(2026-09-14)**:[docs/accent-resources.md](accent-resources.md) — 使える資源(tdmelodic BSD-3、UniDic、koniwa)と使えない資源(OJAD、NHK 辞書=参照用)を次回作業手順つきで記録
 - **アクセントデータ戦略(ADR-0006、2026-09-14)**: 規則層 + ユーザ上書き層 + **tdmelodic(BSD-3)由来の標準アクセント辞書層** + 検証層(koniwa CC0)。OJAD は企業利用不可、NHK 辞書は著作物のため使わない

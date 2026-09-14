@@ -19,6 +19,8 @@ pub enum Engine {
         dir: PathBuf,
         /// User-owned accent overrides (ADR-0006); empty = frontend only.
         accent: crate::accent::AccentTable,
+        /// Enable musculus's deliberate accent deviations (opt-in).
+        accent_deviations: bool,
         /// Voice id (a `.sbv2` file stem); `None` = the first voice.
         voice: Option<String>,
         /// Style id within the voice's style table.
@@ -78,11 +80,13 @@ impl Engine {
                 style_id,
                 style_weight,
                 accent,
+                accent_deviations,
                 ..
             } => {
                 let adapter = crate::sbv2::Sbv2Adapter::load_dir(dir)?
                     .with_style_id(*style_id)
                     .with_style_weight(*style_weight)
+                    .with_accent_deviations(*accent_deviations)
                     .with_accent_table(accent.clone());
                 Ok(Box::new(adapter))
             }
@@ -143,6 +147,7 @@ mod tests {
             style_id: 0,
             style_weight: 1.0,
             accent: Default::default(),
+            accent_deviations: false,
         };
         assert_eq!(sbv2.name(), "sbv2");
         assert_eq!(sbv2.voice_hint().as_deref(), Some("tsukuyomi"));
@@ -168,6 +173,7 @@ mod tests {
             style_id: 0,
             style_weight: 1.0,
             accent: Default::default(),
+            accent_deviations: false,
         };
         assert!(matches!(engine.build(), Err(TtsError::ModelLoad(_))));
 

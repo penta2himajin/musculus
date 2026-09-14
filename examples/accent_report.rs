@@ -32,6 +32,10 @@ struct Args {
     /// rule) behind each item — the inputs the NJD accent step consumes.
     #[arg(long)]
     njd: bool,
+    /// Apply musculus's deliberate accent deviations (experimental). The
+    /// default view is the raw reference frontend (jpreprocess/OpenJTalk).
+    #[arg(long)]
+    deviations: bool,
     /// Apply a user accent override table (JSON array of {kana, tones})
     /// before printing, so the effect of an override is visible without
     /// synthesizing.
@@ -57,6 +61,7 @@ fn accent_view(
     frontend: &JaFrontend,
     input: &str,
     accent: &musculus::accent::AccentTable,
+    deviations: bool,
 ) -> Result<Vec<(String, i32)>, String> {
     let normalized = musculus::sbv2::ja_norm::JaNormalizer::new()
         .normalize(input)
@@ -64,9 +69,14 @@ fn accent_view(
         .text;
     let read = frontend.num2word(&normalized).map_err(|e| e.to_string())?;
     let normalized = musculus::sbv2::normalize::normalize_text(&read);
-    let process = frontend
+    let mut process = frontend
         .process_text(&normalized)
         .map_err(|e| e.to_string())?;
+    if deviations {
+        process
+            .apply_accent_deviations()
+            .map_err(|e| e.to_string())?;
+    }
     let (phones, tones, _word2ph) = process.g2p().map_err(|e| e.to_string())?;
     let tones = accent.apply(&phones, &tones);
     ja::kana_tone(&phones, &tones).map_err(|e| e.to_string())
@@ -124,7 +134,7 @@ fn main() -> Result<(), String> {
                 println!("      {line}");
             }
         }
-        let pairs = accent_view(&frontend, &item.input, &accent)?;
+        let pairs = accent_view(&frontend, &item.input, &accent, args.deviations)?;
         let kana: String = pairs.iter().map(|(m, _)| m.as_str()).collect();
         let tones = ja::tone_string(&pairs);
         // Aligned view: which mora carries which tone (needed to annotate
