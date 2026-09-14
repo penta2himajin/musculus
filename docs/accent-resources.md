@@ -329,3 +329,33 @@ remains an unimplemented, lower-priority option.
 Adding a deviation therefore means declaring it in the annotations with a
 reason — otherwise the gate fails. That is the mechanism that keeps
 "intended" and "accidental" apart.
+
+## Lexical exceptions: ご指導 (2026-09-14)
+
+The listener confirmed that ご指導 is accented — ゴL シH ドL ウL (`LHLL`) —
+so the reference's realisation is right there and the prefix rule was wrong
+to flatten it. The dictionary cannot tell the two apart: 指導 is marked
+**0/3 (heiban)** exactly like 注文, and the reference gives both prefixes
+acc=2/1. The difference is lexical (the literature cites ご指導 as the rare
+case where お/ご *do* change the base accent), so the rule now carries a
+listener-confirmed exception list (`PREFIX_ACCENT_EXCEPTIONS = ["シドウ"]`)
+and `ご指導 -> LHLL` is declared in `ja_accent.jsonl`, which the regression
+gate checks. Measured: ご注文は `LHHHHH` (heiban, listener-approved) and
+ご指導 `LHLL` (accented, listener-confirmed).
+
+## Listening set for 先週と比べると (2026-09-14)
+
+The listener reports two acceptable shapes — 比べると continuing high versus
+being separated with a fall — and wants to compare them by ear. Three
+candidates were rendered (48 kHz, -20 LUFS, same phrase, in
+`ab-test-accent/`):
+
+| file | tones | shape |
+|---|---|---|
+| shinshuu-1.wav | `LHHHHLHHHH` | reference: 先週と heiban, ク falls, ラベルト high |
+| shinshuu-2.wav | `LHHHHHHHHH` | 比べると continuous high (override `クラベルト -> HHHHH`) |
+| shinshuu-3.wav | `LHHHHHHHHL` | continuous high with the final ト low (override `クラベルト -> HHHHL`) |
+
+Both variant shapes are expressible with the override table we already ship,
+so whichever the ear picks can be declared in the annotations and protected
+by the gate straight away.

@@ -306,10 +306,21 @@ impl JaProcess {
     /// untouched; setting the prefix to 0 gives the heiban realisation
     /// ゴL チュH ウH モH ンH ワH, which the listener confirmed.
     ///
+    /// Exceptions are lexical: 指導 is marked heiban in the dictionary
+    /// (0/3) exactly like 注文, yet the listener confirmed that the
+    /// reference's accented realisation is right for ご指導 (ゴL シH ドL
+    /// ウL) and wrong for ご注文 (which must be heiban). The dictionary
+    /// cannot tell them apart, so the bases where the reference already
+    /// matches the standard are listed here. The list is listener-confirmed
+    /// and expected to grow (docs/accent-resources.md).
+    ///
     /// A numeral rule was tried first and removed: neither accent 0 nor
     /// "accent = mora count" reaches the flat セン the listener wants
     /// (that needs phrase-level control), so it stays unimplemented.
     pub fn apply_accent_deviations(&mut self) -> Result<(), JaError> {
+        /// Base readings (field 8) whose お/ご form keeps the reference's
+        /// accented realisation (listener-confirmed).
+        const PREFIX_ACCENT_EXCEPTIONS: [&str; 1] = ["シドウ"];
         let mut prefix_fix: Vec<usize> = Vec::new();
         for i in 0..self.parsed.len().saturating_sub(1) {
             let head: Vec<&str> = self.parsed[i].split(',').collect();
@@ -320,7 +331,10 @@ impl JaProcess {
                 .get(10)
                 .and_then(|accent| accent.split('/').next())
                 .is_some_and(|position| position == "0");
-            if is_polite_prefix && next_is_heiban {
+            let is_exception = next
+                .get(8)
+                .is_some_and(|reading| PREFIX_ACCENT_EXCEPTIONS.contains(reading));
+            if is_polite_prefix && next_is_heiban && !is_exception {
                 prefix_fix.push(i);
             }
         }

@@ -17,5 +17,5 @@
 {"input": "ご注文", "note": "規則1(お/ご + 平板名詞)の適用結果。個別の聴取確認は未", "expected_tones": "LHHHH"}
 {"input": "お名前", "note": "規則1 の適用結果。個別の聴取確認は未", "expected_tones": "LHHH"}
 {"input": "お勉強", "note": "規則1 の適用結果。個別の聴取確認は未(文献の例: お勉強は平板のまま)", "expected_tones": "LHHHH"}
-{"input": "ご指導", "note": "規則1 の適用結果だが、文献は「ご指導」を接頭辞がアクセントを変える例外として挙げる → 要再確認(上書き表で個別修正可能)", "expected_tones": "LHHH"}
+{"input": "ご指導", "note": "listener 確定: ゴL シH ドL ウL。参照実装の実装が規範どおりで、規則1の例外リストに登録(指導は辞書 0/3 平板だが、ご指導はアクセントが付く語彙的例外)", "expected_tones": "LHLL"}
 {"input": "ご連絡", "note": "規則1 の適用結果。個別の聴取確認は未", "expected_tones": "LHHHH"}
