@@ -66,3 +66,94 @@ empirically before committing to rules that might duplicate it.
    - if it does not → implement the numeral rules (nucleus loss in -sen + number, then the 円 variant), each validated against the gold set and by listening
 4. **Extend the override table opportunistically** — it is the only mechanism
    that captures a *speaker's* choice, so it stays regardless of 2/3.
+
+---
+
+## Mechanism map: how the accent actually gets decided (2026-09-14)
+
+Investigated end to end, because it decides where a fix can live. All of it
+is **Rust-only** — no Python or torch is needed for this route.
+
+### 1. The dictionary entries carry the accent
+
+NAIST-jdic is downloaded at build time by `jpreprocess-naist-jdic`'s
+build.rs (an 18 MB tarball, 52 MB CSV) from
+`https://github.com/jpreprocess/naist-jdic/archive/refs/tags/v0.1.3.tar.gz`.
+Its CSV columns are `surface,left,right,cost,pos…,orig,read,pron,accent/mora,chain,…`
+and the numeral entries are:
+
+```
+千,1355,1355,4255,名詞,数,*,*,*,*,千,セン,セン,1/2,C3
+百,1355,1355,2709,名詞,数,*,*,*,*,百,ヒャク,ヒャク,2/2,C3
+```
+
+So **千 = accent 1 of 2 morae (セ＼ン) and 百 = accent 2**, and there is
+**no entry for 千二百 or 二千二百** — compounds are composed by NJD. The
+dictionary data therefore already matches the listener's "千円 is セH ンL".
+
+### 2. Compounds are composed by accent chain rules
+
+`jpreprocess-core/src/accent_rule.rs` parses a `chain` string into a rule
+set (`F1–F5`, `C1–C5`, `P1/P2/P6/P14`, optional `pos%` selector, optional
+`@add` offset). `jpreprocess-njd/src/open_jtalk/accent_type.rs` applies it:
+
+```rust
+let rule = node.get_chain_rule().get_rule(prev.get_pos())?;
+let accent = match rule.accent_type {
+    C1 => mora_size + node_acc,
+    C2 => mora_size + 1,
+    C3 => mora_size,          // <- 千/百 carry C3
+    C4 => 0,
+    C5 => top_node_acc,
+    …
+};
+```
+
+**C3 = "accent = mora_size"**: for a 2-mora 千 that means accent 2, i.e.
+セH ン**H** — the flat/high side of the listener's 千二百 (HHLHH). The
+standard machinery should produce exactly what the listener expects, which
+makes this a **pipeline bug rather than missing data**.
+
+### 3. What our pipeline actually does
+
+`accent_report --njd` (new) shows the tokenisation after
+`text_to_njd` + `preprocess`:
+
+| input | tokens (chain rules) |
+|---|---|
+| `1,200` | 千(**\***) 二(**C3**) 百(**\***) |
+| `千五百` | 千(C3) 五(C3) 百(C3) |
+| `二千二百円` | 二(C3) 千(C3) 二(C3) 百(C3) 円(C3) |
+
+- For **digits**, the digit-sequence rewrite builds 千/百 tokens **without a
+  chain rule** (`chain=*`), so C3 can never fire and 千 keeps its lexical
+  accent 1 → our HLLHH instead of HHLHH. This is the concrete defect for
+  `1,200`.
+- For kanji input the chain rules *are* present, yet the labels still show
+  accent 1 on 千, so there is a second question: whether `njd_set_accent_type`
+  fires (and which node's rule governs which accent). That needs one more
+  diagnostic: dump each node's accent before and after the accent steps.
+
+### 4. Where a fix can live (all in musculus)
+
+1. **Override table** — implemented and working (`--accent`); fixes any case
+   the listener confirms, including multi-nucleus patterns a single
+   dictionary entry cannot express.
+2. **Our own numeral normalisation** — rewrite numbers in musculus's rule
+   layer *before* NJD so the kanji/chain-rule path (or an explicit user
+   dictionary entry) is preserved instead of the digit-sequence path that
+   drops chain rules. Fits the "rules + CI-measurable ground truth" bet.
+3. **Accent-type diagnostic then a targeted fix** — if the C3 application
+   is simply not firing in our call order, correcting that would restore the
+   standard behaviour for the whole class of numeral compounds at once.
+4. A **user dictionary in jpreprocess format** (accent + chain columns,
+   built with `dict_tools Build --user`) is supported by
+   `JPreprocessConfig.user_dictionary`, so corrected entries can be supplied
+   as data once we know which entry/rule to change.
+
+### 5. Environment facts for the tdmelodic route
+
+Docker CLI exists but **the daemon is unavailable** here, so tdmelodic's
+Docker workflow is out; **Python 3.14.6 + torch 2.13.0 are available**, so
+its Python route is feasible if it ever becomes necessary. Given (3), the
+jpreprocess route looks both cheaper and more likely to be the real fix.

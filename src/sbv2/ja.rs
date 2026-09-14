@@ -82,6 +82,32 @@ impl JaFrontend {
             .collect())
     }
 
+    /// Dump the NJD nodes (tokenisation + dictionary details) for a text.
+    ///
+    /// Diagnostic for the accent work: it shows how a numeral was split,
+    /// what accent type and mora count each token carries, and which
+    /// accent chain rule the dictionary attached to it — the inputs the
+    /// NJD accent step consumes (docs/benchmarks/accent/ja-report.md).
+    pub fn njd_dump(&self, text: &str) -> Result<Vec<String>, JaError> {
+        let mut njd = self
+            .jpreprocess
+            .text_to_njd(text)
+            .map_err(|e| JaError::Jpreprocess(e.to_string()))?;
+        njd.preprocess();
+        Ok(njd
+            .nodes
+            .iter()
+            .map(|node| {
+                let surface = node.get_string();
+                let pos = node.get_pos();
+                let read = node.get_read().unwrap_or("?");
+                let pron = node.get_pron();
+                let chain = node.get_chain_rule();
+                format!("{surface:>10} | pos={pos} | read={read} | pron={pron} | chain={chain}")
+            })
+            .collect())
+    }
+
     /// Parse normalized text into a [`JaProcess`] for g2p.
     pub fn process_text(&self, text: &str) -> Result<JaProcess, JaError> {
         let parsed = self

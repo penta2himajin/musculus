@@ -28,6 +28,10 @@ struct Args {
     /// positions) behind each item's tones.
     #[arg(long)]
     labels: bool,
+    /// Dump the NJD tokenisation (surface, POS, reading, accent chain
+    /// rule) behind each item — the inputs the NJD accent step consumes.
+    #[arg(long)]
+    njd: bool,
     /// Apply a user accent override table (JSON array of {kana, tones})
     /// before printing, so the effect of an override is visible without
     /// synthesizing.
@@ -88,6 +92,12 @@ fn main() -> Result<(), String> {
         }
         let item: AccentItem =
             serde_json::from_str(line).map_err(|e| format!("line {}: {e}", i + 1))?;
+        if args.njd {
+            println!("--- NJD for {:?}", item.input);
+            for line in frontend.njd_dump(&item.input).map_err(|e| e.to_string())? {
+                println!("      {line}");
+            }
+        }
         if args.labels {
             let normalized = musculus::sbv2::ja_norm::JaNormalizer::new()
                 .normalize(&item.input)
