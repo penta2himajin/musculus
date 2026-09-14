@@ -66,7 +66,8 @@ pub struct Sbv2Adapter {
     length_scale: f32,
     /// User-owned accent overrides (ADR-0006).
     accent: AccentTable,
-    /// Apply musculus's deliberate accent deviations (opt-in).
+    /// Apply musculus's deliberate accent deviations (on by default;
+    /// validated by ear — docs/accent-resources.md).
     accent_deviations: bool,
 }
 
@@ -140,7 +141,7 @@ impl Sbv2Adapter {
             sdp_ratio: 0.0,
             length_scale: 1.0,
             accent: AccentTable::default(),
-            accent_deviations: false,
+            accent_deviations: true,
         })
     }
 
@@ -149,9 +150,9 @@ impl Sbv2Adapter {
         self.voices.keys().cloned().collect()
     }
 
-    /// Builder: enable musculus's deliberate accent deviations from the
-    /// reference frontend (docs/accent-resources.md). Off by default while
-    /// the encodings are validated by ear.
+    /// Builder: enable or disable musculus's deliberate accent deviations
+    /// from the reference frontend (docs/accent-resources.md). On by
+    /// default; disable for a reference-faithful reading.
     pub fn with_accent_deviations(mut self, enabled: bool) -> Self {
         self.accent_deviations = enabled;
         self

@@ -66,10 +66,11 @@ struct SynthArgs {
     /// ones are cut. 0 = one segment per sentence.
     #[arg(long, default_value_t = 0)]
     max_chars: usize,
-    /// Enable musculus's deliberate accent deviations from the reference
-    /// frontend (experimental; docs/accent-resources.md).
+    /// Use the raw reference frontend (jpreprocess/OpenJTalk) without
+    /// musculus's deliberate accent deviations. The deviations are on by
+    /// default (docs/accent-resources.md).
     #[arg(long)]
-    accent_deviations: bool,
+    no_accent_deviations: bool,
     /// User accent overrides (JSON array of {kana, tones}); applied to
     /// the sbv2 engine's H/L feature after g2p, before encoding. See
     /// docs/decisions/0006-accent-data-strategy.md.
@@ -162,7 +163,7 @@ fn resolve_engine(args: &SynthArgs) -> Result<musculus::factory::Engine, String>
                 style_id: args.style.unwrap_or(0),
                 style_weight: args.style_weight.unwrap_or(1.0),
                 accent,
-                accent_deviations: args.accent_deviations,
+                accent_deviations: !args.no_accent_deviations,
             })
         }
         #[cfg(feature = "wav")]

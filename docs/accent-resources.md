@@ -298,3 +298,17 @@ Listening candidates for the same sentence, 48 kHz / -20 LUFS:
 
 Gates: with the product configuration (deviations + the override table) the
 accent report reports **2 annotated, 0 mismatches**.
+
+## Rule promoted to default (2026-09-14)
+
+The listener judged `gift-fix-b.wav` (prefix deviation + override table)
+"quite natural" and good, so the polite-prefix deviation is **on by
+default**: `Sbv2Adapter` starts with `accent_deviations: true`, the CLI and
+`eval_cer` expose `--no-accent-deviations` for a reference-faithful reading,
+and `accent_report --baseline` shows the raw reference view while the report
+default is the product configuration. With the override table the gate is
+**2 annotated, 0 mismatches**.
+
+The 1,200円 `LLLHH` form carried by the override table was part of that same
+approved file, so it stands for this sentence; the phrase-level `HH` variant
+remains an unimplemented, lower-priority option.

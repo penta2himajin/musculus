@@ -41,10 +41,10 @@ struct Args {
     /// Reference voice WAV (irodori only).
     #[arg(long)]
     ref_wav: Option<PathBuf>,
-    /// Enable musculus's deliberate accent deviations from the reference
-    /// frontend (experimental; docs/accent-resources.md).
+    /// Use the raw reference frontend without musculus's deliberate accent
+    /// deviations (they are on by default; docs/accent-resources.md).
     #[arg(long)]
-    accent_deviations: bool,
+    no_accent_deviations: bool,
     /// User accent overrides (sbv2 only).
     #[arg(long)]
     accent: Option<PathBuf>,
@@ -202,7 +202,7 @@ fn main() -> Result<(), String> {
                 Some(path) => musculus::accent::AccentTable::from_file(path)?,
                 None => Default::default(),
             },
-            accent_deviations: args.accent_deviations,
+            accent_deviations: !args.no_accent_deviations,
         },
         "irodori" => f::Engine::Irodori {
             dir: args
