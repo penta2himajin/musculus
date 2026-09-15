@@ -32,6 +32,12 @@ struct Args {
     /// rule) behind each item — the inputs the NJD accent step consumes.
     #[arg(long)]
     njd: bool,
+    /// Load a jpreprocess-format user dictionary (built with
+    /// `dict_tools build --user jpreprocess <csv> <out>`) instead of the
+    /// bundled one alone. Used to verify that a dictionary entry really
+    /// changes the accent.
+    #[arg(long)]
+    user_dict: Option<PathBuf>,
     /// Show the raw reference frontend (jpreprocess/OpenJTalk) without
     /// musculus's deliberate accent deviations (they are applied by
     /// default; docs/accent-resources.md).
@@ -86,7 +92,11 @@ fn accent_view(
 fn main() -> Result<(), String> {
     let args = Args::parse();
     let content = std::fs::read_to_string(&args.annotations).map_err(|e| format!("read: {e}"))?;
-    let frontend = JaFrontend::new().map_err(|e| format!("ja frontend: {e}"))?;
+    let frontend = match &args.user_dict {
+        Some(path) => JaFrontend::with_user_dictionary(path)
+            .map_err(|e| format!("ja frontend with user dictionary: {e}"))?,
+        None => JaFrontend::new().map_err(|e| format!("ja frontend: {e}"))?,
+    };
     let accent = match &args.accent {
         Some(path) => musculus::accent::AccentTable::from_file(path)?,
         None => Default::default(),

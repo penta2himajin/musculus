@@ -18,7 +18,7 @@
 
 use std::sync::{Arc, LazyLock};
 
-use jpreprocess::{kind, DefaultTokenizer, JPreprocess, SystemDictionaryConfig};
+use jpreprocess::{kind, DefaultTokenizer, JPreprocess, JPreprocessConfig, SystemDictionaryConfig};
 use regex::Regex;
 
 use crate::sbv2::mora::{
@@ -62,6 +62,29 @@ impl JaFrontend {
             .load()
             .map_err(|e| JaError::Jpreprocess(e.to_string()))?;
         let jpreprocess = JPreprocess::with_dictionaries(sdic, None);
+        Ok(Self {
+            jpreprocess: Arc::new(jpreprocess),
+        })
+    }
+
+    /// Build the frontend with the bundled NAIST-JDIC dictionary plus a
+    /// user dictionary.
+    ///
+    /// The user dictionary is a jpreprocess-format prefix dictionary (built
+    /// with `dict_tools build --user jpreprocess <csv> <out>`); entries
+    /// carry accent type, mora count and chain rule, so they override the
+    /// system dictionary's accent assignment — the integration point for a
+    /// generated standard-accent dictionary (docs/accent-resources.md).
+    pub fn with_user_dictionary(path: impl AsRef<std::path::Path>) -> Result<Self, JaError> {
+        let sdic = SystemDictionaryConfig::Bundled(kind::JPreprocessDictionaryKind::NaistJdic);
+        let config = JPreprocessConfig {
+            dictionary: sdic,
+            user_dictionary: Some(serde_json::json!({
+                "path": path.as_ref().to_string_lossy(),
+            })),
+        };
+        let jpreprocess =
+            JPreprocess::from_config(config).map_err(|e| JaError::Jpreprocess(e.to_string()))?;
         Ok(Self {
             jpreprocess: Arc::new(jpreprocess),
         })

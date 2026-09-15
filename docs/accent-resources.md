@@ -413,3 +413,46 @@ reference take is at `ab-test-accent/shinshuu-registered-F.wav` (48 kHz,
 Third-party sheets from the blinded set are still outstanding; when they
 arrive, tally mean naturalness and top choices per label and re-open the
 decision if the group disagrees.
+
+## The dictionary integration point is verified (2026-09-14)
+
+The cheap check before investing in tdmelodic: does jpreprocess actually
+accept an externally built dictionary and honour its accent columns?
+
+Done end to end with our own data:
+
+1. `cargo install jpreprocess-dictionary --features binary` gives
+   `dict_tools`.
+2. A one-entry CSV in the dictionary format (16 columns:
+   `surface,left,right,cost,pos1..pos4,ctype,cform,orig,read,pron,accent/mora,chain,flag`)
+   re-declares 千 as `2/2` instead of the system's `1/2`.
+3. `dict_tools build --user jpreprocess <csv> <bin>` builds a 1 KB
+   jpreprocess-format user dictionary.
+4. `JaFrontend::with_user_dictionary(path)` loads it through
+   `JPreprocessConfig { user_dictionary: Some({"path": …}) }` — new library
+   API; `accent_report --user-dict <path>` exposes it for measurement.
+
+Measured effect (baseline → with the user dictionary):
+
+| input | without | with |
+|---|---|---|
+| 千二百 | `HLLHH` | **`LHLHH`** |
+| 千五百 | `HLLHH` | **`LHLHH`** |
+| 二千二百 | `LHLLHH` | `LHLLHH` (unchanged) |
+
+**So the mechanism works** — the accent/mora column of a dictionary entry
+reaches the labels and moves the realisation.
+
+**Important nuance for the tdmelodic plan**: the *accent phrase head*
+governs the realisation. In 二千二百 the head is 二, so re-declaring 千's
+accent changes its node (verified in the `--njd` dump: 千 2/2) but not the
+tone pattern. A generated standard-accent dictionary will therefore fix
+head words broadly, while compound numerals (whose head is the first
+numeral token) may still need whole-phrase entries or our rule/override
+layer. That is consistent with everything measured earlier.
+
+Pinned by `tests/user_dictionary.rs`, which loads the committed 1 KB fixture
+(`tests/evaluation/fixtures/accent-userdict.{csv,bin}`) and asserts both the
+change (千二百) and the head-governed non-change (二千二百). A dictionary
+format bump fails the test loudly, which is the intent — rebuild the fixture
+with the command recorded in the test header.
