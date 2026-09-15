@@ -46,3 +46,4 @@
 /.uv-cache/
 /.mecab/
 /.venv-tdmelodic/
+/ab-test-accent/tdmelodic/key.ndjson

@@ -75,6 +75,16 @@ impl Sbv2Adapter {
     /// Load every `*.sbv2` voice in `dir`, plus `tokenizer.json` and
     /// `deberta.onnx`.
     pub fn load_dir<P: AsRef<Path>>(dir: P) -> Result<Self, TtsError> {
+        Self::load_dir_with_user_dictionary(dir, None)
+    }
+
+    /// Load a model directory, optionally with a user dictionary that
+    /// overrides accent assignment (a standard-accent dictionary generated
+    /// offline; docs/accent-resources.md).
+    pub fn load_dir_with_user_dictionary<P: AsRef<Path>>(
+        dir: P,
+        user_dictionary: Option<&Path>,
+    ) -> Result<Self, TtsError> {
         let dir = dir.as_ref();
         let tokenizer_bytes = std::fs::read(dir.join("tokenizer.json"))
             .map_err(|e| TtsError::ModelLoad(format!("tokenizer.json: {e}")))?;
@@ -130,8 +140,11 @@ impl Sbv2Adapter {
         }
 
         Ok(Self {
-            frontend: JaFrontend::new()
-                .map_err(|e| TtsError::ModelLoad(format!("ja frontend: {e}")))?,
+            frontend: match user_dictionary {
+                Some(path) => JaFrontend::with_user_dictionary(path),
+                None => JaFrontend::new(),
+            }
+            .map_err(|e| TtsError::ModelLoad(format!("ja frontend: {e}")))?,
             normalizer: JaNormalizer::new(),
             tokenizer,
             bert,

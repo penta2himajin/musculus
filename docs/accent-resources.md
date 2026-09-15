@@ -534,3 +534,43 @@ whole-phrase entries.
 Next step: build that converter and compare our frontend against the
 tdmelodic-filled dictionary on a word set, then let the listener judge a
 sample.
+
+### From model to dictionary: the converter and the disagreement scan (2026-09-15)
+
+`scripts/tdmelodic_to_userdict.py` turns a word list into a
+jpreprocess-format user-dictionary CSV, and the CLI gained `--user-dict`
+(also on `eval_cer`; `Sbv2Adapter::load_dir_with_user_dictionary`) so the
+dictionary is loadable in production, not only in the diagnostic example.
+
+Design decisions, both forced by measurement:
+- **Whole-word entries**, not per-token: UniDic's best path splits compounds
+  and mis-reads the pieces (大規模言語モデル came out as 大=オー + 規模),
+  while `s2ya` returns the whole reading and its accent.
+- The accent comes from tdmelodic's marked reading (`]` = the mora where the
+  pitch falls → accent position; no marker = plateau/heiban); multi-nucleus
+  readings are skipped, because one dictionary entry is one accent phrase.
+
+The converter produced 8 clean entries for the first test list (機械学習
+4/7, 確率微分方程式 10/13, 音声合成 5/8, …), and **loading that dictionary
+changed nothing**: our frontend already assigns those accents. So the
+question became "where do the two actually disagree?", answered by a scan
+over 39 modern/compound words:
+
+- **31 agree, 8 disagree** — and every disagreement is a multi-word
+  compound: 個人情報保護, 働き方改革, 地域活性化, 地球温暖化, 少子高齢化,
+  感染症対策, 教師なし学習, 電験一種.
+- That is the value proposition in concrete form: for simple and most
+  modern vocabulary our frontend is already right; the compounds are where
+  an external estimator can add something.
+
+A blind A/B set for five of those words (個人情報保護, 働き方改革,
+地球温暖化, 感染症対策, 教師なし学習) is at `ab-test-accent/tdmelodic/`
+(48 kHz, -20 LUFS, per-word randomised, key withheld) with a score sheet.
+The judgement decides the next step: widen the generated dictionary, keep
+the frontend as is, or choose per word.
+
+Caveats recorded: Chainer on macOS warns that Accelerate can produce
+incorrect results (the documented examples match exactly, but the warnings
+are real); the per-word mode takes about a second, so experiments need no
+full-NEologd generation; and an entry only moves the realisation when the
+word heads its accent phrase.

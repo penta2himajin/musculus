@@ -21,6 +21,8 @@ pub enum Engine {
         accent: crate::accent::AccentTable,
         /// Enable musculus's deliberate accent deviations (opt-in).
         accent_deviations: bool,
+        /// Optional standard-accent user dictionary (offline generated).
+        user_dictionary: Option<PathBuf>,
         /// Voice id (a `.sbv2` file stem); `None` = the first voice.
         voice: Option<String>,
         /// Style id within the voice's style table.
@@ -81,13 +83,17 @@ impl Engine {
                 style_weight,
                 accent,
                 accent_deviations,
+                user_dictionary,
                 ..
             } => {
-                let adapter = crate::sbv2::Sbv2Adapter::load_dir(dir)?
-                    .with_style_id(*style_id)
-                    .with_style_weight(*style_weight)
-                    .with_accent_deviations(*accent_deviations)
-                    .with_accent_table(accent.clone());
+                let adapter = crate::sbv2::Sbv2Adapter::load_dir_with_user_dictionary(
+                    dir,
+                    user_dictionary.as_deref(),
+                )?
+                .with_style_id(*style_id)
+                .with_style_weight(*style_weight)
+                .with_accent_deviations(*accent_deviations)
+                .with_accent_table(accent.clone());
                 Ok(Box::new(adapter))
             }
             #[cfg(feature = "wav")]
@@ -148,6 +154,7 @@ mod tests {
             style_weight: 1.0,
             accent: Default::default(),
             accent_deviations: false,
+            user_dictionary: None,
         };
         assert_eq!(sbv2.name(), "sbv2");
         assert_eq!(sbv2.voice_hint().as_deref(), Some("tsukuyomi"));
@@ -174,6 +181,7 @@ mod tests {
             style_weight: 1.0,
             accent: Default::default(),
             accent_deviations: false,
+            user_dictionary: None,
         };
         assert!(matches!(engine.build(), Err(TtsError::ModelLoad(_))));
 

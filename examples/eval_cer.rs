@@ -41,6 +41,9 @@ struct Args {
     /// Reference voice WAV (irodori only).
     #[arg(long)]
     ref_wav: Option<PathBuf>,
+    /// Standard-accent user dictionary (sbv2 only).
+    #[arg(long)]
+    user_dict: Option<PathBuf>,
     /// Use the raw reference frontend without musculus's deliberate accent
     /// deviations (they are on by default; docs/accent-resources.md).
     #[arg(long)]
@@ -203,6 +206,7 @@ fn main() -> Result<(), String> {
                 None => Default::default(),
             },
             accent_deviations: !args.no_accent_deviations,
+            user_dictionary: args.user_dict.clone(),
         },
         "irodori" => f::Engine::Irodori {
             dir: args

@@ -76,6 +76,10 @@ struct SynthArgs {
     /// docs/decisions/0006-accent-data-strategy.md.
     #[arg(long)]
     accent: Option<PathBuf>,
+    /// Standard-accent user dictionary (jpreprocess format, built with
+    /// `dict_tools build --user jpreprocess`); sbv2 only.
+    #[arg(long)]
+    user_dict: Option<PathBuf>,
     /// User term dictionary (JSON array of {term, aliases}); applied
     /// before whichever engine runs. The dictionary is yours — musculus
     /// bundles none (docs/model-licenses.md).
@@ -164,6 +168,7 @@ fn resolve_engine(args: &SynthArgs) -> Result<musculus::factory::Engine, String>
                 style_weight: args.style_weight.unwrap_or(1.0),
                 accent,
                 accent_deviations: !args.no_accent_deviations,
+                user_dictionary: args.user_dict.clone(),
             })
         }
         #[cfg(feature = "wav")]
