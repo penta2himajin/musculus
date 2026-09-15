@@ -5,7 +5,7 @@
 ## ファイル構成
 
 ```
-ab-test/
+listening/01-engine-vs-engine/
   pair-01/A.wav  B.wav      ← 同じ文を2エンジンで合成(A/B はペアごとにランダム)
   pair-02/A.wav  B.wav
   pair-03/A.wav  B.wav

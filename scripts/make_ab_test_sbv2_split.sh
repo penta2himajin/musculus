@@ -16,17 +16,17 @@
 # reason (measured once: a -16 LUFS target left a peaky side 3.6 dB
 # short).
 #
-# Writes ab-test-steps/pair-NN/{A,B}.wav and key.ndjson (gitignored,
+# Writes listening/02-irodori-steps/pair-NN/{A,B}.wav and key.ndjson (gitignored,
 # revealed only after scoring).
 #
-# Usage: scripts/make_ab_test_steps.sh [out-dir]   (default: ab-test-steps)
+# Usage: scripts/make_ab_test_steps.sh [out-dir]   (default: listening/02-irodori-steps)
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-OUT="${1:-ab-test-sbv2-split}"
+OUT="${1:-listening/03-sbv2-whole-vs-split}"
 REF_WAV="${IRODORI_REF_WAV:-vendor/irodori-ref.wav}"
 SENTENCE_SILENCE="${AB_SENTENCE_SILENCE:-0.4}"
 LUFS="${AB_LUFS:--16}"

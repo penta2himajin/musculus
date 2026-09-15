@@ -24,20 +24,15 @@
 .irodori-tts-ref/
 
 # Blind A/B engine mapping (revealed after the listener scores)
-/ab-test/key.ndjson
 
 # macOS
 .DS_Store
 
 # CoreML compiled-model cache (measurement knob)
 /.coreml-cache/
-/ab-test-steps/key.ndjson
-/ab-test-sbv2-split/key.ndjson
-/ab-test-sbv2-group/key.ndjson
 
 # Reference frontend for accent comparison (local, not committed)
 /.venv/
-/ab-test-accent-blind/key.ndjson
 # tdmelodic evaluation environment (local only; weights and dictionaries are never bundled)
 /.tdmelodic-reference/
 /.tdmelodic-build/
@@ -46,4 +41,6 @@
 /.uv-cache/
 /.mecab/
 /.venv-tdmelodic/
-/ab-test-accent/tdmelodic/key.ndjson
+
+# A/B mapping keys stay local: they are only opened after scoring
+key.ndjson

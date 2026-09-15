@@ -5,7 +5,7 @@
 ## ファイル構成
 
 ```
-ab-test-sbv2-split/
+listening/03-sbv2-whole-vs-split/
   pair-01/A.wav  B.wav   ← 同じ文・同じエンジン。片方は 1 パス、片方は文分割 + 0.4 秒無音
   ...(全 5 ペア)
   key.ndjson             ← どちらが分割版か(採点まで開かない)

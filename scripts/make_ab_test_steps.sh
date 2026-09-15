@@ -14,17 +14,17 @@
 # without limiting, and the script verifies the achieved loudness pair by
 # pair before presenting anything.
 #
-# Writes ab-test-steps/pair-NN/{A,B}.wav and key.ndjson (gitignored,
+# Writes listening/02-irodori-steps/pair-NN/{A,B}.wav and key.ndjson (gitignored,
 # revealed only after scoring).
 #
-# Usage: scripts/make_ab_test_steps.sh [out-dir]   (default: ab-test-steps)
+# Usage: scripts/make_ab_test_steps.sh [out-dir]   (default: listening/02-irodori-steps)
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-OUT="${1:-ab-test-steps}"
+OUT="${1:-listening/02-irodori-steps}"
 REF_WAV="${IRODORI_REF_WAV:-vendor/irodori-ref.wav}"
 STEPS_LOW="${AB_STEPS_LOW:-5}"
 STEPS_HIGH="${AB_STEPS_HIGH:-40}"

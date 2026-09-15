@@ -348,7 +348,7 @@ gate checks. Measured: ご注文は `LHHHHH` (heiban, listener-approved) and
 The listener reports two acceptable shapes — 比べると continuing high versus
 being separated with a fall — and wants to compare them by ear. Three
 candidates were rendered (48 kHz, -20 LUFS, same phrase, in
-`ab-test-accent/`):
+`listening/05-shinshuu-variants/`):
 
 | file | tones | shape |
 |---|---|---|
@@ -365,7 +365,7 @@ by the gate straight away.
 The listener asked for versions of 先週と比べると with the initial セ high. The
 override table expresses this directly (tones are set absolutely), so the
 phrase-level shape that the rule path could not reach is still available as
-data. Six candidates now sit in `ab-test-accent/`, paired by initial mora:
+data. Six candidates now sit in `listening/05-shinshuu-variants/`, paired by initial mora:
 
 | file | tones | note |
 |---|---|---|
@@ -379,7 +379,7 @@ data. Six candidates now sit in `ab-test-accent/`, paired by initial mora:
 ### Blinded set for third-party listeners (2026-09-14)
 
 The listener is collecting evaluations from acquaintances, so a blinded copy
-was prepared: `ab-test-accent-blind/` holds the same six takes under neutral
+was prepared: `listening/07-blind-shinshuu/` holds the same six takes under neutral
 names **A–F in a randomly shuffled order**, with `key.ndjson` gitignored (the
 mapping is revealed only after scoring). Files and sheets were checked to
 contain no mention of tone patterns, and all six measure exactly
@@ -407,7 +407,7 @@ Registered: **F = セH + continuous high + final ト low**
 (`HHHHHHHHHL`), expressed compositionally in the override table
 (`センシュウト -> HHHHH`, `クラベルト -> HHHHL`) and declared as
 `expected_tones` so the regression gate follows. A product-rendered
-reference take is at `ab-test-accent/shinshuu-registered-F.wav` (48 kHz,
+reference take is at `listening/05-shinshuu-variants/shinshuu-registered-F.wav` (48 kHz,
 -20 LUFS).
 
 Third-party sheets from the blinded set are still outstanding; when they
@@ -564,7 +564,7 @@ over 39 modern/compound words:
   an external estimator can add something.
 
 A blind A/B set for five of those words (個人情報保護, 働き方改革,
-地球温暖化, 感染症対策, 教師なし学習) is at `ab-test-accent/tdmelodic/`
+地球温暖化, 感染症対策, 教師なし学習) is at `listening/06-compound-accent-tdmelodic/`
 (48 kHz, -20 LUFS, per-word randomised, key withheld) with a score sheet.
 The judgement decides the next step: widen the generated dictionary, keep
 the frontend as is, or choose per word.

@@ -10,7 +10,7 @@
 ## ファイル構成
 
 ```
-ab-test-sbv2-group/
+listening/04-sbv2-whole-vs-grouping/
   pair-01/A.wav  B.wav   ← 同じ文・同じエンジン、片方は 1 パス、片方はグルーピング
   ...(全 5 ペア)
   key.ndjson             ← どちらがグルーピングか + ペア種別(採点まで開かない)

@@ -2,8 +2,8 @@
 #
 # Blind A/B sample generator: SBV2JE vs Irodori-TTS on identical texts.
 #
-# Writes ab-test/pair-NN/{A,B}.wav (the A/B→engine assignment is
-# randomized per pair) and ab-test/key.ndjson — the mapping. key.ndjson
+# Writes listening/01-engine-vs-engine/pair-NN/{A,B}.wav (the A/B→engine assignment is
+# randomized per pair) and listening/01-engine-vs-engine/key.ndjson — the mapping. key.ndjson
 # is gitignored so the assignment stays blind until the listener has
 # finished scoring; reveal it afterwards.
 #
@@ -17,14 +17,14 @@
 # (44.1 vs 48 kHz) and the loudness (SBV2 peaks ~0.3-0.5 vs Irodori 1.0)
 # would leak the engine and bias the preference judgement.
 #
-# Usage: scripts/make_ab_test.sh [out-dir]     (default: ab-test)
+# Usage: scripts/make_ab_test.sh [out-dir]     (default: listening/01-engine-vs-engine)
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-OUT="${1:-ab-test}"
+OUT="${1:-listening/01-engine-vs-engine}"
 REF_WAV="${IRODORI_REF_WAV:-vendor/irodori-ref.wav}"
 STEPS="${IRODORI_STEPS:-40}"
 LUFS="${AB_LUFS:--16}"

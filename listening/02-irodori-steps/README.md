@@ -5,7 +5,7 @@ Irodori-TTS の**Euler steps だけを変えた**2つの音声を、どちらが
 ## ファイル構成
 
 ```
-ab-test-steps/
+listening/02-irodori-steps/
   pair-01/A.wav  B.wav      ← 同じ文・同じ seed、steps だけが違う(A/B はペアごとにランダム)
   pair-02/A.wav  B.wav
   pair-03/A.wav  B.wav
