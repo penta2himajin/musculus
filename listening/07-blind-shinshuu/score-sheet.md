@@ -27,3 +27,16 @@
 ---
 
 記入後、このファイルをそのまま返していただくか、本文に貼り付けて送ってください。
+
+---
+
+## 結果(キー開示後 / 2026-09-15)
+
+伏せた対応: **A=shinshuu-1 / B=shinshuu-2 / C=shinshuu-5 / D=shinshuu-3 / E=shinshuu-4 / F=shinshuu-6**
+(候補の音調: 1=`LHHHHLHHHH`, 2=`LHHHHHHHHH`, 3=`LHHHHHHHHL`, 4=`HHHHHLHHHH`, 5=`HHHHHHHHHH`, 6=`HHHHHHHHHL`)
+
+- **listener 判定: C か F が良い** → **C = 候補5(セH + 全H)**、**F = 候補6(セH + 連続H + 文末トL)** で、**どちらも句頭が高い(セH)**
+- 直前の明示選択(05 の候補3 = セL)とは**句頭が逆** → **盲検で明示選択が覆った初の例**
+- 登録: **F(候補6)を採用**。上書き表に `センシュウト → HHHHH` + `クラベルト → HHHHL` として登録し、`expected_tones = HHHHHHHHHL` でゲート化(docs/accent-resources.md、listening-log 第10回)
+
+**知人による第三者評価は今回は実施せず**(listener が単独で判定)。セットはそのまま残してあるので、後日配布すれば同じ手順で比較できる。

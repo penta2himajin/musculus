@@ -31,3 +31,13 @@
 
 - 選ばれた形を上書き表に登録し、`ja_accent.jsonl` に `expected_tones` として宣言 → **回帰ゲートが以後守る**
 - 文脈依存(「区切られて読む」ケース)が本当にあるなら、文分割の有無と組み合わせた聴取も設計できる(`--split-sentences` は実装済み)
+
+---
+
+## 結果(2026-09-15)
+
+- **第1ラウンド(明示・ラベル付き)**: listener は **2/5 か 3/6**、とくに **3/6 が好み**と報告 → 一時 **3(セL)** を登録
+- **第2ラウンド(盲検・`listening/07-blind-shinshuu/`)**: **C か F** が良い → 対応表を開くと **どちらも セH(高起)** で、**第1ラウンドの選択が盲検で覆った**
+- **最終登録: F = 候補6**(セH + 連続H + 文末トL)。上書き表は `センシュウト → HHHHH` と `クラベルト → HHHHL` の合成で表現し、`expected_tones = HHHHHHHHHL` として回帰ゲートが守っている
+
+詳細は `docs/accent-resources.md`(高起の変種と initial lowering の抑制)と `docs/benchmarks/listening-log.md` 第10回を参照。
