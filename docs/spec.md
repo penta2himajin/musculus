@@ -150,6 +150,7 @@ SBV2JE ベースラインが動いた後に、比較アダプタとして実装�
 - `SpeechSegment` のスタイル/キャプション表現(実装が示すまで凍結)
 - ストリーミング合成(M4 以降)
 - **文分割 + 文間無音(2026-09-14 実装・検証済み)**:`src/segmenter.rs` + CLI `--split-sentences` / `--sentence-silence`(opt-in)。盲検 A/B は split 3 勝 2 敗・平均 CMOS ±0.00 で、**「常に分割」は採用しない**(長文では息切れが減るが、短文では流れを壊し、脱音・過大な文末下降も出た)。**既定は 1 パス**。次の候補は長さを考慮したグルーピング(短文を連結し長文のみ分割)
+- **tdmelodic 環境が動作(2026-09-15)**:`scripts/setup_tdmelodic.sh`(uv で Python 3.9、Chainer を `--no-build-isolation`、Debian の MeCab ソース、UniDic kana-accent 2.1.2 をビルド、モデル 1.36 MB 自動取得)。**数詞複合語は改善しない**(参照と一致)、**丁寧接頭辞は混在**(ご指導 ✓ / ご注文 ✗)、**現代語彙のカバレッジが価値**。統合は「オフラインで語彙リスト → s2ya → jpreprocess 形式ユーザ辞書 → `with_user_dictionary`」の形が妥当
 - **ユーザ辞書の受け口を実測検証(2026-09-14)**:`JaFrontend::with_user_dictionary` + `accent_report --user-dict`。`dict_tools build --user jpreprocess` で作った辞書の accent/mora が**実際にトーンを動かす**ことを確認(千二百 HLLHH→LHLHH)。句頭の語が実現を決めるため、非句頭(二千二百の 千)は変化しない → tdmelodic 経路は「句頭語の修正」に効く。`tests/user_dictionary.rs` で固定
 - **L3 アクセント回帰ゲート(2026-09-14 実装)**:`tests/l3_accent.rs` — 参照オラクル(pyopenjtalk)フィクスチャとの忠実性 18/18、意図的逸脱 8 項目、containment 違反 0。逸脱は `expected_tones` で宣言しないとゲートが止める
 - **アクセント逸脱層(2026-09-14 実装 → 耳検証済みで既定 ON)**:`JaProcess::apply_accent_deviations`(NJD ノードのアクセント欄を書き換え)+ CLI/`eval_cer` の `--accent-deviations`、`accent_report --deviations`。**規則1=丁寧接頭辞 お/ご + 平板名詞**(参照は acc=2 を付けてチュ後に下降するが、辞書は注文=0/4、規範も接頭辞は結合相手のアクセントを変えない → ゴL+全て高に修正。ご注文・お名前・お勉強・ご連絡で確認)。数詞規則は「平板 HH/LL に届かない」ため削除(句レベル制御が次の課題)

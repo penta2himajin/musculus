@@ -456,3 +456,81 @@ Pinned by `tests/user_dictionary.rs`, which loads the committed 1 KB fixture
 change (千二百) and the head-governed non-change (二千二百). A dictionary
 format bump fails the test loudly, which is the intent — rebuild the fixture
 with the command recorded in the test header.
+
+---
+
+## tdmelodic is operational — what it does and does not fix (2026-09-15)
+
+The environment hurdles were real and are now scripted
+(`scripts/setup_tdmelodic.sh`, with `--verify`):
+
+- tdmelodic is **Chainer**-based (development ended 2019), so it needs an
+  older Python: Python 3.9.25 fetched by **uv** into the workspace, with
+  Chainer 7.8.1 built via `--no-build-isolation` (its setup.py needs
+  pkg_resources from the environment).
+- It reads accents from **UniDic kana-accent 2.1.2** (144 MB, licence
+  GPL v2.0 / LGPL v2.1 / modified BSD — commercial use free, recorded in
+  docs/model-licenses.md §6), which needs **MeCab** to build. MeCab 0.996
+  comes from the Debian source tarball (taku910/mecab publishes no release
+  archives) and UniDic is compiled into `.mecab/lib/mecab/dic/unidic`.
+- Runtime needs `PATH=.mecab/bin` and
+  `SETUPTOOLS_USE_DISTUTILS=stdlib` (otherwise setuptools' vendored
+  distutils lacks `msvccompiler` and imports fail).
+- The neural model is only **1.36 MB** and downloads on first use; the
+  per-word mode `tdmelodic-s2ya` runs in about a second, so no hours-long
+  dictionary generation is needed for experiments.
+
+### Results on the cases we care about
+
+Notation: tdmelodic marks the **high morae** in brackets (`accent_symbol`
+in its source is `{0: "]", 1: "", 2: "["}`); 機械学習 → キ[カイガ]クシュー
+means the high span is カイガ.
+
+| input | tdmelodic | our frontend (reference) | listener-confirmed |
+|---|---|---|---|
+| 千二百 | `セ]ンニ[ヒャク]` (HLLHH) | `HLLHH` | `LLLHH` / `HHLHH` |
+| 千五百 | `セ]ンゴ[ヒャク]` | `HLLHH` | — |
+| 二千二百円 | `ニ[セ]ンニ[ヒャク]エン` | `LHLLHHLL` | `HHLLHHHL` |
+| 千円 / 二千円 | `セ[ンエン` / `ニ[センエン` | — | — |
+| ご指導 | `ゴ[シ]ドー` (LHLL) | `LHLL` | `LHLL` ✓ |
+| ご注文 | `ゴ[チュ]ーモン` (accented) | accented | heiban (LHHHH) |
+
+**So tdmelodic does not fix the numeral compounds** — it agrees with
+OpenJTalk there (as predicted: UniDic stores accents per word and numerals
+are compositional). For the polite-prefix class it is mixed: right for
+ご指導, accented for ご注文 like the reference. The numeral cases stay with
+our override table.
+
+### What it does add: coverage
+
+Readings agree with our frontend on this sample, and the accents are the
+added value for modern/compound vocabulary:
+
+| word | reading (ours = tdmelodic) | tdmelodic accent |
+|---|---|---|
+| 確率微分方程式 | カクリツビブンホーテーシキ | カ[クリツビブンホーテ]ーシキ |
+| 電験一種 | デンケンイッシュ | デ[ンケンイ]ッシュ |
+| 生成的人工知能 | セーセーテキジンコーチノー | セ[ーセーテキジンコーチ]ノー |
+| 大規模言語モデル | ダイキボゲンゴモデル | ダ[イキボゲンゴモ]デル |
+| マルクスアウレリウス | マルクスアウレリウス | マ]ルクスア[ウレリ]ウス |
+
+### Integration architecture (the tractable shape)
+
+Use tdmelodic **offline**, not at runtime and not over the whole NEologd
+vocabulary (that run takes hours to days):
+
+1. a word list (the consumer's domain vocabulary, or a common-word list)
+   goes through `tdmelodic-s2ya`;
+2. the tool converts the output into a **jpreprocess-format user-dictionary
+   CSV** (16 columns, accent from tdmelodic, chain rule from the rules);
+3. `dict_tools build --user jpreprocess` produces the user dictionary;
+4. `JaFrontend::with_user_dictionary` loads it — the integration point
+   verified above.
+
+Caveat measured earlier and still true: an entry moves the realisation when
+the word **heads its accent phrase**, so multi-word compounds may need
+whole-phrase entries.
+
+Next step: build that converter and compare our frontend against the
+tdmelodic-filled dictionary on a word set, then let the listener judge a
+sample.

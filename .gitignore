@@ -38,3 +38,11 @@
 # Reference frontend for accent comparison (local, not committed)
 /.venv/
 /ab-test-accent-blind/key.ndjson
+# tdmelodic evaluation environment (local only; weights and dictionaries are never bundled)
+/.tdmelodic-reference/
+/.tdmelodic-build/
+/.venv-tdmelodic39/
+/.uv-python/
+/.uv-cache/
+/.mecab/
+/.venv-tdmelodic/
