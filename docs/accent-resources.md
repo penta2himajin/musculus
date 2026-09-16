@@ -639,3 +639,67 @@ Validation set: `listening/08-compound-rules/` pairs the rule's output against
 the current one for all ten affected words (48 kHz, -20 LUFS, randomised,
 key withheld). The judgement decides whether the rule becomes the default, a
 per-word proposal, or is dropped.
+
+---
+
+## Consecutive /i/ vowels and the accent: the listener's question answered (2026-09-15)
+
+The listener asked whether the phonology really changes when /i/ sequences
+meet (生成的人工知能 has セイ + イ-like runs) and whether the pitch they heard
+is what the literature predicts. It is, and the relevant sources are:
+
+**[「母音が連続するときの発音」(日本語検定協会のコラム)](https://www.nihongokentei.jp/column/nakagawa-shuta/column-29.php)** surveys
+every vowel sequence in standard Japanese against the 新明解 and NHK
+dictionaries:
+
+- **[ii]**: 「いい」 is accepted as either イイ or イー; sequences appear in
+  押し板・かわいい, long vowels in おにいさん・おじいさん — so /i/+/i/ is
+  realised either as two morae or as one long vowel.
+- **[ei]**: only a few words keep the sequence (えい "ray", 稼いで); **most
+  Sino-Japanese words take the long vowel** — 映画 = エーガ, 影響 = エーキョー
+  — with エイ as the formal reading. Our frontend coalesces セイ to セエ
+  (measured in the mora view), which follows that tendency.
+- **Accent and coalescence interact**: for [oo], 多い was traditionally
+  **オオ＼イ (low-high-low)** and that fall between the vowels is given as the
+  reason a long vowel was hard to form; the newer, simpler **オ＼ーイ
+  (high-low-low)** made オー easy. So a pitch fall inside the sequence blocks
+  coalescence, and coalescence removes a mora that could bear the nucleus.
+
+**[「日本語のアクセント」(tokyoaccent.com)](https://tokyoaccent.com/accent/accent.htm)** states the nucleus
+rule directly: 「いわゆる特殊拍(引き音、撥音、促音)は核になることはない。…また**連母音の後半拍・無声化した拍も核になりにくい**」
+— special morae cannot carry the nucleus, and the **second half of a vowel
+sequence** and **devoiced morae** resist it too. The [TUFS module](https://www.coelang.tufs.ac.jp/mt/ja/pmod/practical/03-01-01.php)
+gives the same rule for learners.
+
+**[現代日本語の母音連続回避のためのわたり音挿入について](https://www.kci.go.kr/kciportal/ci/sereArticleSearch/ciSereArtiView.kci?sereArticleSearchBean.artiId=ART001581406)**
+explains the avoidance strategies: glide insertion ([j]/[w]) applies only to
+sequences whose sonority rises (/ia, ie, io, ea, ua, uo, ue, oa/); others
+diphthongise — so /ii/ neither gains a glide nor becomes a diphthong, it
+stays a sequence or a long vowel. And [long vowels behave as two-mora vowel
+sequences](https://lemonschool.tokyo/japanesephonetics-phonology/longvowelssequences2/)
+(they split into two notes in songs), so treating them as two morae is right.
+
+**Two consequences for musculus**, both now recorded:
+
+1. Our special-mora set covers ン, ッ and long vowels. The literature adds
+   **vowel-sequence second halves and devoiced morae** as nucleus-resistant,
+   so `shift_off_special` should be extended to those (a concrete follow-up;
+   the current output for the three listener words is unaffected).
+2. The listener's expectation for 生成的人工知能 is `LHHHHHHHHHHLL`-shaped
+   (the fall after チ, before ノウ) and the compound rule already produces
+   exactly that, which is why they judged that pair 同等 with a positive
+   lean.
+
+## Compound-rule verdict: not adopted as the default (2026-09-15)
+
+`listening/08-compound-rules/` was scored: **rules 0 wins, current 2 wins,
+8 ties** (mean −1.50). The pre-registered criterion said a current-side win
+drops the rule, so it stays opt-in and the default remains the reference
+fidelity plus the validated prefix deviation plus the override table.
+
+The listener's notes were more useful than the tally: for many words their
+expected pattern differs from *both* systems (phrase splits, different
+nuclei), and those expectations are now registered in the override table and
+declared in `ja_accent.jsonl` (自然言語処理 `LHHHHHHL`, 働き方改革
+`LHHHHHHLLL`, 少子高齢化 and 地域活性化 `HLLLHHHH`). The report gate is at
+**annotated: 16, mismatches: 0**.

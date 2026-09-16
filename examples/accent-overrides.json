@@ -26,5 +26,25 @@
   {
     "kana": "キョオシナシガクシュウ",
     "tones": "LHHHHHLLL"
+  },
+  {
+    "kana": "シゼンゲンゴショリ",
+    "tones": "LHHHHHHL",
+    "note": "listener 期待形: シL ゼンゲンゴショHHHHHHH リL(核=ショ、末尾リが下がる)。現行は ゴショリLLL に聞こえるとの所見"
+  },
+  {
+    "kana": "ハタラキカタカイカク",
+    "tones": "LHHHHHHLLL",
+    "note": "listener 期待形: ハL タラキカタカイカクHHHHHHLLL(核=カイカクの カ)。現行は句が分かれて聞こえるとの所見"
+  },
+  {
+    "kana": "チイキカッセエカ",
+    "tones": "HLLLHHHH",
+    "note": "listener 期待形: チH イキカッセエカ? 08と同型(核=頭高)"
+  },
+  {
+    "kana": "ショオシコオレエカ",
+    "tones": "HLLLHHHH",
+    "note": "listener 期待形: ショH ウシコLLL ウレイカHHHH(核=頭高 ショ)。現行は ショL ウシコHHH ウレイカLLLL に聞こえるとの所見"
   }
 ]

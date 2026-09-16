@@ -25,7 +25,7 @@
 {"input": "大規模言語モデル", "note": "tdmelodic/UniDic 生成辞書の検証用(現代語彙)"}
 {"input": "機械学習", "note": "tdmelodic/UniDic 生成辞書の検証用(現代語彙)"}
 {"input": "深層学習", "note": "tdmelodic/UniDic 生成辞書の検証用(現代語彙)"}
-{"input": "自然言語処理", "note": "tdmelodic/UniDic 生成辞書の検証用(現代語彙)"}
+{"input": "自然言語処理", "note": "listener 期待形(第11回の所見より)。上書き表に登録し回帰ゲートで固定", "expected_tones": "LHHHHHHL"}
 {"input": "音声合成", "note": "tdmelodic/UniDic 生成辞書の検証用(現代語彙)"}
 {"input": "強化学習", "note": "アクセント食い違い探索用(現代語彙)"}
 {"input": "教師なし学習", "note": "listener 期待形 = 後部一型(N2=学習 4拍・平板 → N2 第1拍 ガに核)。規則由来なので確定", "expected_tones": "LHHHHHLLL"}
@@ -46,13 +46,13 @@
 {"input": "感染症対策", "note": "アクセント食い違い探索用(現代語彙)"}
 {"input": "遠隔授業", "note": "アクセント食い違い探索用(現代語彙)"}
 {"input": "在宅勤務", "note": "アクセント食い違い探索用(現代語彙)"}
-{"input": "働き方改革", "note": "アクセント食い違い探索用(現代語彙)"}
+{"input": "働き方改革", "note": "listener 期待形(第11回の所見より)。上書き表に登録し回帰ゲートで固定", "expected_tones": "LHHHHHHLLL"}
 {"input": "人手不足", "note": "アクセント食い違い探索用(現代語彙)"}
-{"input": "少子高齢化", "note": "アクセント食い違い探索用(現代語彙)"}
+{"input": "少子高齢化", "note": "listener 期待形(第11回の所見より)。上書き表に登録し回帰ゲートで固定", "expected_tones": "HLLLHHHH"}
 {"input": "地方創生", "note": "アクセント食い違い探索用(現代語彙)"}
 {"input": "観光資源", "note": "アクセント食い違い探索用(現代語彙)"}
 {"input": "伝統工芸", "note": "アクセント食い違い探索用(現代語彙)"}
-{"input": "地域活性化", "note": "アクセント食い違い探索用(現代語彙)"}
+{"input": "地域活性化", "note": "listener 期待形(第11回の所見より)。上書き表に登録し回帰ゲートで固定", "expected_tones": "HLLLHHHH"}
 {"input": "情報セキュリティ", "note": "アクセント食い違い探索用(現代語彙)"}
 {"input": "個人情報保護", "note": "listener 期待形 = NHK の前部末型(N2=保護 2拍 → N1 最終拍 ホに核)。規則由来なので確定", "expected_tones": "LHHHHHHHL"}
 {"input": "著作権侵害", "note": "アクセント食い違い探索用(現代語彙)"}
