@@ -574,3 +574,37 @@ incorrect results (the documented examples match exactly, but the warnings
 are real); the per-word mode takes about a second, so experiments need no
 full-NEologd generation; and an entry only moves the realisation when the
 word heads its accent phrase.
+
+---
+
+## The listener's three compound intuitions match the standard rules (2026-09-15)
+
+The listener gave target pronunciations for three words that both the current
+frontend and tdmelodic had missed. Checked against the compound-accent
+literature, all three are **the standard patterns**, not idiolect.
+
+The rule set: NHK Broadcasting Culture Research Institute's revision notes
+([NHKアクセント辞典"新辞典"への大改訂(3)](https://www.nhk.or.jp/bunken/research/kotoba/pdf/20170101_10.pdf))
+classify compounds by the **mora count of the second element**:
+
+| N2 length | pattern | prediction |
+|---|---|---|
+| ≤ 2 morae | 前部末型 (most common) | nucleus on **N1's last mora** |
+| 3–4 morae | 後部一型 (most common) | nucleus on **N2's first mora** (when N2 is 頭高 or 平板/尾高; 窪薗・山本 1999) |
+| ≥ 5 morae | 後部保存型 | N2 keeps **its own** accent; N1 is deaccented; some compounds go fully flat |
+
+Component accents (UniDic and NAIST-jdic agree): 個人 1/3 · 情報 0/4 · 保護 1/2
+· 地球 0/3 · 温暖 0/4 · 教師 1/3 · 学習 0/4.
+
+| word | structure | N2 | rule | predicted | listener | current frontend | tdmelodic |
+|---|---|---|---|---|---|---|---|
+| 個人情報保護 | 個人情報 + 保護 | 2 | 前部末型 | 核 on ホ → `LHHHHHHHL` | **`LHHHHHHHL`** ✓ | `LHHHHHHLL` ✗ | heiban ✗ |
+| 地球温暖化 | 地球 + 温暖化 | 5 | 後部保存型 (N2 heiban) | plateau → `LHHHHHHH` (8 morae) | **`LHHHHHHH`** ✓ | `LHHLHHHH` (splits phrases) ✗ | fall at 6 ✗ |
+| 教師なし学習 | 教師なし + 学習 | 4 | 後部一型 | 核 on ガ → `LHHHHHLLL` (9 morae) | **`LHHHHHLLL`** ✓ | 核 9 ✗ | 核 6 ✓ |
+
+So the listener's ear reproduces the standard rules exactly, and **neither
+engine matches all three** — which is why the earlier A/B came out 2–2–1.
+It also points at the generic fix: the three-way N2-length rule (plus the
+窪薗・山本 subrules for 3–4 morae) is implementable as a rule layer, rather
+than one override per word. The three patterns are registered as overrides
+for now (annotated: 12, mismatches: 0), and the rule layer is the follow-up.
