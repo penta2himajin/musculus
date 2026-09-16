@@ -38,6 +38,9 @@ struct Args {
     /// changes the accent.
     #[arg(long)]
     user_dict: Option<PathBuf>,
+    /// Apply the experimental compound-accent rules.
+    #[arg(long)]
+    compound_rules: bool,
     /// Show the raw reference frontend (jpreprocess/OpenJTalk) without
     /// musculus's deliberate accent deviations (they are applied by
     /// default; docs/accent-resources.md).
@@ -69,6 +72,7 @@ fn accent_view(
     input: &str,
     accent: &musculus::accent::AccentTable,
     baseline: bool,
+    compound_rules: bool,
 ) -> Result<Vec<(String, i32)>, String> {
     let normalized = musculus::sbv2::ja_norm::JaNormalizer::new()
         .normalize(input)
@@ -85,6 +89,12 @@ fn accent_view(
             .map_err(|e| e.to_string())?;
     }
     let (phones, tones, _word2ph) = process.g2p().map_err(|e| e.to_string())?;
+    let mut tones = tones;
+    if compound_rules {
+        process
+            .apply_compound_rules(&phones, &mut tones)
+            .map_err(|e| e.to_string())?;
+    }
     let tones = accent.apply(&phones, &tones);
     ja::kana_tone(&phones, &tones).map_err(|e| e.to_string())
 }
@@ -145,7 +155,13 @@ fn main() -> Result<(), String> {
                 println!("      {line}");
             }
         }
-        let pairs = accent_view(&frontend, &item.input, &accent, args.baseline)?;
+        let pairs = accent_view(
+            &frontend,
+            &item.input,
+            &accent,
+            args.baseline,
+            args.compound_rules,
+        )?;
         let kana: String = pairs.iter().map(|(m, _)| m.as_str()).collect();
         let tones = ja::tone_string(&pairs);
         // Aligned view: which mora carries which tone (needed to annotate

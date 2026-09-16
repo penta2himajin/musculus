@@ -517,6 +517,67 @@ impl JaProcess {
         Ok(phones)
     }
 
+    /// Tokens as the compound-accent rules see them, built from the NJD
+    /// node strings (field 1 POS, 2 numeral, 8 reading, 10 accent/mora).
+    pub fn compound_tokens(&self) -> Vec<crate::compound::Token> {
+        self.parsed
+            .iter()
+            .filter_map(|line| {
+                let fields: Vec<&str> = line.split(',').collect();
+                if fields.len() < 11 {
+                    return None;
+                }
+                let reading = fields[8];
+                let morae = split_kana_morae(reading);
+                let special: Vec<bool> = morae
+                    .iter()
+                    .enumerate()
+                    .map(|(i, mora)| {
+                        mora == "ン" || mora == "ッ" || (i > 0 && *mora == morae[i - 1])
+                    })
+                    .collect();
+                let accent = fields[10]
+                    .split('/')
+                    .next()
+                    .unwrap_or("0")
+                    .parse()
+                    .unwrap_or(0);
+                Some(crate::compound::Token {
+                    pos: fields[1].to_string(),
+                    numeral: fields.get(2) == Some(&"数"),
+                    morae: morae.len(),
+                    accent,
+                    special,
+                })
+            })
+            .collect()
+    }
+
+    /// Apply the compound-accent rules to a phone-level tone array in
+    /// place. Returns the number of compounds rewritten.
+    ///
+    /// The rules work on morae, so the phone array is converted through the
+    /// mora spans (which also drop the boundary pads) and written back.
+    pub fn apply_compound_rules(
+        &self,
+        phones: &[String],
+        tones: &mut [i32],
+    ) -> Result<usize, JaError> {
+        let spans = kana_tone_spans(phones, tones)?;
+        let tokens = self.compound_tokens();
+        let mut mora_tones: Vec<i32> = spans.iter().map(|span| span.tone).collect();
+        let rewrites = crate::compound::apply(&tokens, &mut mora_tones);
+        if rewrites.is_empty() {
+            return Ok(0);
+        }
+        for (span, tone) in spans.iter().zip(mora_tones.iter()) {
+            for index in span.start..span.end.min(tones.len()) {
+                tones[index] = *tone;
+            }
+        }
+        Ok(rewrites.len())
+    }
+
     /// Human-readable dump of the prosody labels driving the tones.
     ///
     /// Diagnostic for the accent work: shows where each accent phrase

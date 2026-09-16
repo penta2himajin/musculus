@@ -69,6 +69,9 @@ pub struct Sbv2Adapter {
     /// Apply musculus's deliberate accent deviations (on by default;
     /// validated by ear — docs/accent-resources.md).
     accent_deviations: bool,
+    /// Apply the compound-accent rules (experimental; opt-in until the
+    /// affected words are validated by ear).
+    compound_rules: bool,
 }
 
 impl Sbv2Adapter {
@@ -155,12 +158,19 @@ impl Sbv2Adapter {
             length_scale: 1.0,
             accent: AccentTable::default(),
             accent_deviations: true,
+            compound_rules: false,
         })
     }
 
     /// Voice ids available in this adapter, sorted.
     pub fn voice_names(&self) -> Vec<String> {
         self.voices.keys().cloned().collect()
+    }
+
+    /// Builder: enable the compound-accent rules (experimental).
+    pub fn with_compound_rules(mut self, enabled: bool) -> Self {
+        self.compound_rules = enabled;
+        self
     }
 
     /// Builder: enable or disable musculus's deliberate accent deviations
@@ -295,6 +305,25 @@ impl Sbv2Adapter {
         let (phones, tones, mut word2ph) = process
             .g2p()
             .map_err(|e| TtsError::Inference(e.to_string()))?;
+        // musculus's compound-accent rules (deviation layer): NHK's
+        // N2-mora-count classification, applied to the tones before the
+        // user's overrides, which therefore still win.
+        let mut tones = tones;
+        if self.compound_rules {
+            match process.apply_compound_rules(&phones, &mut tones) {
+                Ok(0) => {}
+                Ok(count) => {
+                    if std::env::var("MUSCULUS_DEBUG_COMPOUND").is_ok() {
+                        eprintln!("[compound] rewrote {count} compound(s)");
+                    }
+                }
+                Err(error) => {
+                    if std::env::var("MUSCULUS_DEBUG_COMPOUND").is_ok() {
+                        eprintln!("[compound] skipped: {error}");
+                    }
+                }
+            }
+        }
         // User-owned accent overrides replace the frontend's H/L where
         // they match, before anything is encoded.
         let tones = self.accent.apply(&phones, &tones);

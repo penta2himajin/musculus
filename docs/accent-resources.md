@@ -608,3 +608,34 @@ It also points at the generic fix: the three-way N2-length rule (plus the
 窪薗・山本 subrules for 3–4 morae) is implementable as a rule layer, rather
 than one override per word. The three patterns are registered as overrides
 for now (annotated: 12, mismatches: 0), and the rule layer is the follow-up.
+
+### The compound-accent rule layer (implemented, opt-in)
+
+The three listener-confirmed words match the standard three-way classification,
+so the rule itself was implemented rather than only its instances:
+`src/compound.rs` applies NHK's N2-mora-count rule (≤2 → 前部末型, 3–4 →
+後部一型 with the 窪薗・山本 subrule, ≥5 → 後部保存型), shifts a nucleus off a
+special mora, and rewrites the compound's tones. `JaProcess::apply_compound_rules`
+converts the phone stream to morae and back, so it composes with the override
+table (which is applied afterwards and therefore still wins).
+
+Measured footprint: it changes **10 of the 61 annotated words** — 生成的人工知能,
+大規模言語モデル, 自然言語処理, 再生可能エネルギー, 地球温暖化, 感染症対策,
+働き方改革, 少子高齢化, 地域活性化, 個人情報保護. Two observations from that:
+
+- It matches tdmelodic exactly on 生成的人工知能 (`LHHHHHHHHHHLL`), and it
+  reproduces the rule's shape on 地球温暖化 and 個人情報保護.
+- It *degrades* 大規模言語モデル (baseline and tdmelodic both give
+  `LHHHHHHHLL`; the rule gives `LHLHHHHHLL`), and it cannot touch
+  教師なし学習 at all because なし is an 形容詞, so the noun+noun chain breaks.
+
+Because an unvalidated deviation must not ship as the default, the rule is
+**opt-in**: `--compound-rules` on the CLI and `eval_cer`, a new
+`accent_report --compound-rules`, and `Sbv2Adapter::with_compound_rules`
+(default off). The product configuration (deviations + the override table)
+still reports **annotated: 12, mismatches: 0**.
+
+Validation set: `listening/08-compound-rules/` pairs the rule's output against
+the current one for all ten affected words (48 kHz, -20 LUFS, randomised,
+key withheld). The judgement decides whether the rule becomes the default, a
+per-word proposal, or is dropped.

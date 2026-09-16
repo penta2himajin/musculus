@@ -41,6 +41,10 @@ struct Args {
     /// Reference voice WAV (irodori only).
     #[arg(long)]
     ref_wav: Option<PathBuf>,
+    /// Apply the experimental compound-accent rules (NHK's N2 mora-count
+    /// classification); opt-in until the affected words are validated.
+    #[arg(long)]
+    compound_rules: bool,
     /// Standard-accent user dictionary (sbv2 only).
     #[arg(long)]
     user_dict: Option<PathBuf>,
@@ -207,6 +211,7 @@ fn main() -> Result<(), String> {
             },
             accent_deviations: !args.no_accent_deviations,
             user_dictionary: args.user_dict.clone(),
+            compound_rules: args.compound_rules,
         },
         "irodori" => f::Engine::Irodori {
             dir: args

@@ -76,6 +76,10 @@ struct SynthArgs {
     /// docs/decisions/0006-accent-data-strategy.md.
     #[arg(long)]
     accent: Option<PathBuf>,
+    /// Apply the experimental compound-accent rules (NHK's N2 mora-count
+    /// classification); opt-in until the affected words are validated.
+    #[arg(long)]
+    compound_rules: bool,
     /// Standard-accent user dictionary (jpreprocess format, built with
     /// `dict_tools build --user jpreprocess`); sbv2 only.
     #[arg(long)]
@@ -169,6 +173,7 @@ fn resolve_engine(args: &SynthArgs) -> Result<musculus::factory::Engine, String>
                 accent,
                 accent_deviations: !args.no_accent_deviations,
                 user_dictionary: args.user_dict.clone(),
+                compound_rules: args.compound_rules,
             })
         }
         #[cfg(feature = "wav")]

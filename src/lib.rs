@@ -24,6 +24,7 @@ pub mod eval;
 // Accent overrides operate on the ja phone stream (onnx-only).
 #[cfg(feature = "onnx")]
 pub mod accent;
+pub mod compound;
 pub mod prelude;
 pub mod segmenter;
 pub mod traits;
