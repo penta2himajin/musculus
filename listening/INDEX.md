@@ -23,7 +23,7 @@ and the results, not the sound. Regenerate any set with its generator script
 | 06 | [06-compound-accent-tdmelodic](06-compound-accent-tdmelodic/README.md) | Compound-word accent: tdmelodic-generated dictionary vs the current frontend | **2–2–1, no clear winner** → frontend stays the default; tdmelodic kept as a per-word option |
 | 07 | [07-blind-shinshuu](07-blind-shinshuu/README.md) | Blind repeat of set 05 for third-party listeners (A–F, no hints) | Judged C-or-F locally (both high-initial セ); acquaintance sheets were not collected — the listener evaluated alone |
 | 08 | [08-compound-rules](08-compound-rules/README.md) | Compound-accent rules (NHK's N2 mora-count classification) against the current output, 10 affected words | **awaiting the listener's judgement** (rule layer is opt-in until then) |
-| 09 | [09-sdp-ratio](09-sdp-ratio/README.md) | SBV2 `sdp_ratio`: deterministic duration (0.0, our default) vs stochastic mixing (0.2, upstream default) | **awaiting the listener's judgement** |
+| 09 | [09-sdp-ratio](09-sdp-ratio/README.md) | SBV2 `sdp_ratio`: deterministic duration (0.0, our default) vs stochastic mixing (0.2, upstream default) | **2–2–1, no winner** → default stays 0.0; `--sdp-ratio` kept |
 | — | [scratch/](scratch/) | Loose outputs from earlier steps (candidate variants, product examples) | Not scored; kept for reference |
 
 ## Reading the archive

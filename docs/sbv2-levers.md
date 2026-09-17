@@ -65,3 +65,27 @@ The audition set is `listening/09-sdp-ratio/` (5 pairs, 48 kHz, -20 LUFS
 verified, per-pair randomised, key withheld). `--sdp-ratio`, `--noise-scale`,
 `--noise-scale-w` and `--length-scale` are now CLI flags, with the reference
 defaults, so whichever setting wins can be made the default and gated.
+
+## sdp_ratio verdict: no winner, default unchanged (2026-09-15)
+
+`listening/09-sdp-ratio/` was scored: **0.2 won 2, 0.0 won 2, one tie**
+(mean +0.25). The difference is at the listener's resolution and does not
+correlate consistently with text length (0.2 was preferred on the short and
+medium pairs, 0.0 on the long narrative and the last pair; the 0.0 side was
+described as 途切れ途切れ in two pairs and the 0.2 side as worse in two
+others). So the default stays **0.0**, the Rust reference's value, and
+`--sdp-ratio` remains available for per-use experiments.
+
+The measurement behind it is solid even though the preference is not: 0.0 is
+deterministic in duration (10.04 s three times) and 0.2 varies
+(9.68/9.73/9.76 s).
+
+An accent observation from the same round turned into a fix: the listener
+heard 昇る as non-heiban inside 「最も高く昇る夜」 while it is correct alone
+(`LHH`, and the dictionary has 昇る = 0/3 heiban). That is an accent-joining
+problem in context, so `ノボル -> LHH` is registered in the override table and
+the phrase is declared in `ja_accent.jsonl` (the ノボル span is
+listener-confirmed; the surrounding morae are the frontend's own pattern,
+pinned only to catch drift).
+
+`noise_scale` (0.677 vs upstream 0.6) remains the one unmeasured lever.
