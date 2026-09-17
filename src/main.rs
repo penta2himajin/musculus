@@ -42,6 +42,21 @@ struct SynthArgs {
     /// Style blend weight: 0 = neutral mean, 1 = raw style; sbv2 only.
     #[arg(long)]
     style_weight: Option<f32>,
+    /// DP/SDP mixture (0 = deterministic duration only, 1 = stochastic
+    /// only; higher adds tempo variation). Reference default 0.0, upstream
+    /// Style-Bert-VITS2 0.2. sbv2 only.
+    #[arg(long)]
+    sdp_ratio: Option<f32>,
+    /// Noise for the deterministic duration predictor (reference 0.677,
+    /// upstream 0.6). sbv2 only.
+    #[arg(long)]
+    noise_scale: Option<f32>,
+    /// Noise for the stochastic duration predictor (0.8 in both).
+    #[arg(long)]
+    noise_scale_w: Option<f32>,
+    /// Speech length/rate: larger is slower (default 1.0). sbv2 only.
+    #[arg(long)]
+    length_scale: Option<f32>,
     /// Reference voice WAV for the irodori engine (any mono rate; it is
     /// resampled to 48 kHz and loudness-normalized).
     #[arg(long)]
@@ -168,8 +183,14 @@ fn resolve_engine(args: &SynthArgs) -> Result<musculus::factory::Engine, String>
                     .clone()
                     .unwrap_or_else(|| PathBuf::from(f::SBV2_DEFAULT_DIR)),
                 voice: args.voice.clone(),
-                style_id: args.style.unwrap_or(0),
-                style_weight: args.style_weight.unwrap_or(1.0),
+                decode: musculus::sbv2::DecodeOptions {
+                    style_id: args.style.unwrap_or(0),
+                    style_weight: args.style_weight.unwrap_or(1.0),
+                    sdp_ratio: args.sdp_ratio.unwrap_or(0.0),
+                    noise_scale: args.noise_scale.unwrap_or(0.677),
+                    noise_scale_w: args.noise_scale_w.unwrap_or(0.8),
+                    length_scale: args.length_scale.unwrap_or(1.0),
+                },
                 accent,
                 accent_deviations: !args.no_accent_deviations,
                 user_dictionary: args.user_dict.clone(),

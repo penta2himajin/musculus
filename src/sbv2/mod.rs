@@ -28,6 +28,41 @@ use ja::JaFrontend;
 use ja_norm::JaNormalizer;
 use synth::{load_session, synthesize_vits2, Vits2Input};
 
+/// Decoding knobs shared by every voice, mirroring Style-Bert-VITS2's
+/// inference parameters. Defaults follow the Rust reference
+/// (`sbv2_core::easy_synthesize`); upstream Style-Bert-VITS2 ships
+/// `sdp_ratio = 0.2` and `noise_scale = 0.6` instead, so the levers are
+/// exposed for audition (docs/sbv2-levers.md).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DecodeOptions {
+    /// Style row in the voice's style table (0 = neutral mean).
+    pub style_id: i32,
+    /// Style blend: 0 = neutral mean, 1 = the raw style vector.
+    pub style_weight: f32,
+    /// DP / SDP mixture: 0 = deterministic duration only, 1 = stochastic
+    /// only; higher values add tempo variation.
+    pub sdp_ratio: f32,
+    /// Noise for the deterministic duration predictor.
+    pub noise_scale: f32,
+    /// Noise for the stochastic duration predictor.
+    pub noise_scale_w: f32,
+    /// Speech length (rate): larger is slower.
+    pub length_scale: f32,
+}
+
+impl Default for DecodeOptions {
+    fn default() -> Self {
+        Self {
+            style_id: 0,
+            style_weight: 1.0,
+            sdp_ratio: 0.0,
+            noise_scale: 0.677,
+            noise_scale_w: 0.8,
+            length_scale: 1.0,
+        }
+    }
+}
+
 /// Sample rate the released SBV2 models decode at (reference: the
 /// WAV spec in sbv2_core `array_to_vec`).
 pub const SAMPLE_RATE: u32 = 44100;
@@ -64,6 +99,8 @@ pub struct Sbv2Adapter {
     style_weight: f32,
     sdp_ratio: f32,
     length_scale: f32,
+    noise_scale: f32,
+    noise_scale_w: f32,
     /// User-owned accent overrides (ADR-0006).
     accent: AccentTable,
     /// Apply musculus's deliberate accent deviations (on by default;
@@ -156,6 +193,8 @@ impl Sbv2Adapter {
             style_weight: 1.0,
             sdp_ratio: 0.0,
             length_scale: 1.0,
+            noise_scale: 0.677,
+            noise_scale_w: 0.8,
             accent: AccentTable::default(),
             accent_deviations: true,
             compound_rules: false,
@@ -199,6 +238,21 @@ impl Sbv2Adapter {
     /// style (1).
     pub fn with_style_weight(mut self, style_weight: f32) -> Self {
         self.style_weight = style_weight;
+        self
+    }
+
+    /// Builder: noise fed to the deterministic duration predictor
+    /// (the Rust reference exports 0.677; upstream Style-Bert-VITS2 uses
+    /// 0.6). Only applied when the model declares the input.
+    pub fn with_noise_scale(mut self, noise_scale: f32) -> Self {
+        self.noise_scale = noise_scale;
+        self
+    }
+
+    /// Builder: noise fed to the stochastic duration predictor (0.8 in both
+    /// references). Only applied when the model declares the input.
+    pub fn with_noise_scale_w(mut self, noise_scale_w: f32) -> Self {
+        self.noise_scale_w = noise_scale_w;
         self
     }
 
@@ -424,6 +478,8 @@ impl TtsAdapter for Sbv2Adapter {
                     speaker_id: 0,
                     sdp_ratio: self.sdp_ratio,
                     length_scale: self.length_scale,
+                    noise_scale: self.noise_scale,
+                    noise_scale_w: self.noise_scale_w,
                 },
                 &voice.input_names,
             )?;

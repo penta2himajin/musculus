@@ -89,6 +89,8 @@ pub struct Vits2Input<'a> {
     pub speaker_id: i64,
     pub sdp_ratio: f32,
     pub length_scale: f32,
+    pub noise_scale: f32,
+    pub noise_scale_w: f32,
 }
 
 /// Run the VITS2 decode model → audio `[1, 1, samples]`.
@@ -98,10 +100,11 @@ pub struct Vits2Input<'a> {
 /// (newer) in varying combinations, so anything not in `input_names` is
 /// skipped and its constant applied inside the graph.
 ///
-/// Fixed decoding constants `noise_scale = 0.677`, `noise_scale_w = 0.8`
-/// are the values the released models were exported with (reference:
-/// sbv2_core `easy_synthesize`); they are fed when the model declares
-/// the inputs and otherwise live inside the graph.
+/// The default decoding constants `noise_scale = 0.677`,
+/// `noise_scale_w = 0.8`, `sdp_ratio = 0.0` are the Rust reference's
+/// (`sbv2_core::easy_synthesize`); upstream Style-Bert-VITS2 ships
+/// `0.6 / 0.8 / 0.2` instead, and each is fed only when the model declares
+/// the input (otherwise the value lives inside the graph).
 pub fn synthesize_vits2(
     session: &Mutex<Session>,
     input: &Vits2Input<'_>,
@@ -220,7 +223,7 @@ pub fn synthesize_vits2(
     if declared("noise_scale") {
         feeds.push((
             "noise_scale",
-            Value::from_array(Array1::from_vec(vec![NOISE_SCALE]))
+            Value::from_array(Array1::from_vec(vec![input.noise_scale]))
                 .map_err(|e| inference_error("vits2 noise_scale", e))?
                 .into_dyn(),
         ));
@@ -228,7 +231,7 @@ pub fn synthesize_vits2(
     if declared("noise_scale_w") {
         feeds.push((
             "noise_scale_w",
-            Value::from_array(Array1::from_vec(vec![NOISE_SCALE_W]))
+            Value::from_array(Array1::from_vec(vec![input.noise_scale_w]))
                 .map_err(|e| inference_error("vits2 noise_scale_w", e))?
                 .into_dyn(),
         ));
@@ -248,11 +251,6 @@ pub fn synthesize_vits2(
         .map_err(|e| inference_error("vits2 output rank", e))?;
     Ok(audio)
 }
-
-/// Decode constants for conversions that expose them as graph inputs
-/// (reference: sbv2_core `easy_synthesize`).
-const NOISE_SCALE: f32 = 0.677;
-const NOISE_SCALE_W: f32 = 0.8;
 
 #[cfg(test)]
 mod tests {

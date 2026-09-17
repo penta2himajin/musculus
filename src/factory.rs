@@ -25,12 +25,10 @@ pub enum Engine {
         user_dictionary: Option<PathBuf>,
         /// Apply the experimental compound-accent rules.
         compound_rules: bool,
+        /// Decoding knobs (sdp_ratio, noise scales, length, style).
+        decode: crate::sbv2::DecodeOptions,
         /// Voice id (a `.sbv2` file stem); `None` = the first voice.
         voice: Option<String>,
-        /// Style id within the voice's style table.
-        style_id: i32,
-        /// Style blend weight (0 = neutral mean, 1 = raw style).
-        style_weight: f32,
     },
     /// Irodori-TTS — ONNX artifacts plus a reference voice WAV.
     #[cfg(feature = "wav")]
@@ -81,22 +79,25 @@ impl Engine {
         match self {
             Engine::Sbv2 {
                 dir,
-                style_id,
-                style_weight,
+                voice: _,
                 accent,
                 accent_deviations,
                 user_dictionary,
                 compound_rules,
-                ..
+                decode,
             } => {
                 let adapter = crate::sbv2::Sbv2Adapter::load_dir_with_user_dictionary(
                     dir,
                     user_dictionary.as_deref(),
                 )?
-                .with_style_id(*style_id)
-                .with_style_weight(*style_weight)
                 .with_accent_deviations(*accent_deviations)
                 .with_compound_rules(*compound_rules)
+                .with_style_id(decode.style_id)
+                .with_style_weight(decode.style_weight)
+                .with_sdp_ratio(decode.sdp_ratio)
+                .with_length_scale(decode.length_scale)
+                .with_noise_scale(decode.noise_scale)
+                .with_noise_scale_w(decode.noise_scale_w)
                 .with_accent_table(accent.clone());
                 Ok(Box::new(adapter))
             }
@@ -154,8 +155,7 @@ mod tests {
         let sbv2 = Engine::Sbv2 {
             dir: PathBuf::from("vendor/sbv2"),
             voice: Some("tsukuyomi".into()),
-            style_id: 0,
-            style_weight: 1.0,
+            decode: Default::default(),
             accent: Default::default(),
             accent_deviations: false,
             user_dictionary: None,
@@ -182,8 +182,7 @@ mod tests {
         let engine = Engine::Sbv2 {
             dir: PathBuf::from("definitely/not/here"),
             voice: None,
-            style_id: 0,
-            style_weight: 1.0,
+            decode: Default::default(),
             accent: Default::default(),
             accent_deviations: false,
             user_dictionary: None,

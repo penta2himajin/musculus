@@ -203,8 +203,7 @@ fn main() -> Result<(), String> {
                 .clone()
                 .unwrap_or_else(|| PathBuf::from(f::SBV2_DEFAULT_DIR)),
             voice: args.voice.clone(),
-            style_id: 0,
-            style_weight: 1.0,
+            decode: musculus::sbv2::DecodeOptions::default(),
             accent: match &args.accent {
                 Some(path) => musculus::accent::AccentTable::from_file(path)?,
                 None => Default::default(),
