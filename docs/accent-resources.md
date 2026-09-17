@@ -703,3 +703,40 @@ nuclei), and those expectations are now registered in the override table and
 declared in `ja_accent.jsonl` (自然言語処理 `LHHHHHHL`, 働き方改革
 `LHHHHHHLLL`, 少子高齢化 and 地域活性化 `HLLLHHHH`). The report gate is at
 **annotated: 16, mismatches: 0**.
+
+## Diagnostics that closed two hypotheses (2026-09-15)
+
+Two literature-backed hypotheses about the accent layer were measured against
+the 61 annotated words, using pyopenjtalk's labels (the reference, which our
+frontend matches):
+
+1. **Nucleus on a devoiced mora** (「無声化した拍も核になりにくい」): **0 words**.
+   Note that OpenJTalk applies its devoicing step *after* the accent steps, so
+   the ordering makes this possible in principle — it simply does not happen
+   in this sample.
+2. **Nucleus on the second half of a vowel sequence or long vowel** (「連母音の
+   後半拍も核になりにくい」): **0 words**.
+
+So the frontend already respects both halves of the 核の移動 rule that our
+own `shift_off_special` implements only for ン/ッ/long vowels. Extending it
+would be a no-op on this evidence, and the hypothesis is closed rather than
+implemented.
+
+Also checked and closed: the devoiced-vowel *phone* representation. Our g2p
+lowercases the label's uppercase vowel just as the reference does
+(`sbv2_core/src/jtalk.rs:558`), so dropping the case marker is faithful, not a
+port bug.
+
+## What the listener's remaining observations actually are (2026-09-15)
+
+Several notes describe gradual pitch rather than a discrete nucleus — 「オンダンカ
+がキュウよりもややトーンが低くなる」, 「やや右下がり」,
+「クはサよりもトーンが落ちる」. These are **declination / M-level**
+phenomena, and the accent layer's H/L feature is binary: it cannot express
+them, so no amount of listening on those words can turn them into a
+registerable pattern. They are recorded as a **feature limitation**: handling
+them would need pitch-contour control (F0 modelling downstream of the accent
+layer), not an accent-value change. Two other recurring notes — 「音核が分かれて
+いる」(働き方改革, 少子高齢化, 地域活性化) — point at **accent-phrase grouping**
+rather than nucleus placement; that is a different mechanism (the NJD chain
+flags / phrase step) and is parked.
